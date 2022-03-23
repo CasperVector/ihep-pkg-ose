@@ -1,0 +1,79 @@
+diff -Nur ip-R2-21-1/configure/RELEASE ip-R2-21-1/configure/RELEASE
+--- ip-R2-21-1/configure/RELEASE	2021-07-22 01:17:43.541748313 +0800
++++ ip-R2-21-1/configure/RELEASE	2021-07-22 01:26:48.203713139 +0800
+@@ -15,6 +15,8 @@
+ ASYN=$(SUPPORT)/asyn
+ IPAC=$(SUPPORT)/ipac
+ SNCSEQ=$(SUPPORT)/seq
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ 
+ EPICS_BASE=/opt/epics/base
+ 
+diff -Nur ip-R2-21-1/iocs/ipExample/iocBoot/iocIpExample/st.cmd ip-R2-21-1/iocs/ipExample/iocBoot/iocIpExample/st.cmd
+--- ip-R2-21-1/iocs/ipExample/iocBoot/iocIpExample/st.cmd	2019-08-17 05:53:25.000000000 +0800
++++ ip-R2-21-1/iocs/ipExample/iocBoot/iocIpExample/st.cmd	2020-09-27 00:10:26.166383154 +0800
+@@ -1,6 +1,6 @@
+ < envPaths
+-dbLoadDatabase("../../dbd/ipExample.dbd")
+-ipExample_registerRecordDeviceDriver(pdbbase)
++dbLoadDatabase("../../dbd/ipApp.dbd")
++ipApp_registerRecordDeviceDriver(pdbbase)
+ 
+ 
+ iocInit
+diff -Nur ip-R2-21-1/iocs/ipExample/iocBoot/iock65xx/st.cmd ip-R2-21-1/iocs/ipExample/iocBoot/iock65xx/st.cmd
+--- ip-R2-21-1/iocs/ipExample/iocBoot/iock65xx/st.cmd	1970-01-01 08:00:00.000000000 +0800
++++ ip-R2-21-1/iocs/ipExample/iocBoot/iock65xx/st.cmd	2021-09-22 21:15:16.664906000 +0800
+@@ -0,0 +1,13 @@
++#!../../bin/linux-x86_64/ipApp
++
++< envPaths
++
++cd "${TOP}"
++dbLoadDatabase "dbd/ipApp.dbd"
++ipApp_registerRecordDeviceDriver pdbbase
++
++iocshLoad("$(ASYN)/iocsh/serial.cmd", "PORT=L0,DEVICE=/dev/ttyUSB0")
++dbLoadRecords("db/Keithley65xxEM.db", "P=xxx:, Dmm=6517A:, PORT=L0")
++iocInit
++seq &Keithley65xxEM, "P=xxx:, Dmm=6517A:, channels=10, model=6517A"
++
+diff -Nur ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd
+--- ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd	2019-08-17 05:53:25.000000000 +0800
++++ ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd	2021-09-03 22:44:39.933540273 +0800
+@@ -4,4 +4,6 @@
+ include "drvAsynIPPort.dbd"
+ include "devEpics.dbd"
+ include "devGpib.dbd"
++include "asSupport.dbd"
++include "devIocStats.dbd"
+ include "ipSupport.dbd"
+diff -Nur ip-R2-21-1/ipApp/src/Makefile ip-R2-21-1/ipApp/src/Makefile
+--- ip-R2-21-1/ipApp/src/Makefile	2019-08-17 05:53:29.000000000 +0800
++++ ip-R2-21-1/ipApp/src/Makefile	2020-09-25 00:33:14.035661052 +0800
+@@ -37,6 +37,24 @@
+ ip_LIBS += seq pv
+ ip_LIBS += $(EPICS_BASE_IOC_LIBS)
+ 
++PROD_IOC = ipApp
++# <name>.dbd will be created from <name>Include.dbd
++DBD += ipApp.dbd
++
++# ipApp_registerRecordDeviceDriver.cpp will be created from ipApp.dbd
++ipApp_SRCS += ipApp_registerRecordDeviceDriver.cpp
++ipApp_SRCS_DEFAULT += ipMain.cpp
++
++#ifdef AUTOSAVE
++ipApp_LIBS += autosave
++#endif
++#ifdef DEVIOCSTATS
++ipApp_LIBS += devIocStats
++#endif
++ipApp_LIBS += ip
++ipApp_LIBS += asyn
++ipApp_LIBS += $(EPICS_BASE_IOC_LIBS)
++
+ #===========================
+ 
+ include $(TOP)/configure/RULES

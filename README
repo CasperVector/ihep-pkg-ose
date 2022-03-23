@@ -1,0 +1,7 @@
+Quick start (assuming a Docker service is already running):
+
+$ ./misc/dboot.sh base
+$ ./misc/dboot.sh base 'src_get; epel_get'
+$ ./misc/dboot.sh base 'for name in $pkgs_boot; do build $name; done'
+$ ./misc/dboot.sh epics
+

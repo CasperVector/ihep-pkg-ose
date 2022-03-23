@@ -1,0 +1,22 @@
+base support ADSupport autosave ipac
+seq calc iocStats asyn busy sscan
+motor ADCore softIoc medm pcas cagateway
+
+alive allenBradley caputRecorder
+ether_ip Yokogawa_DAS lua scaler
+
+dac128V ip330 ipUnidig love softGlue vac std
+modbus StreamDevice vme softGlueZynq camac ip
+
+delaygen optics mca Galil measComp quadEM dxpSITORO dxp
+Keithley648x netDev s7nodave
+
+motorMotorSim motorAMCI motorAcs motorAcsTech80 motorAerotech
+motorAttocube motorDeltaTau motorFaulhaber motorHytec motorIms
+motorKohzu motorMclennan motorMicos motorMicroMo motorMicronix
+motorNPoint motorNewFocus motorNewport motorOms motorOmsAsyn
+motorOriel motorPI motorPIGCS2 motorParker motorPhytron motorPiJena
+motorScriptMotor motorSmarAct motorSmartMotor motorThorLabs
+
+ADSimDetector ADMerlin ADPilatus ADXspress3
+

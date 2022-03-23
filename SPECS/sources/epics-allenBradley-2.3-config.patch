@@ -1,0 +1,10 @@
+diff -ur allenBradley-2.3/configure/RELEASE allenBradley-2.3/configure/RELEASE
+--- allenBradley-2.3/configure/RELEASE	2010-04-14 02:00:12.000000000 +0800
++++ allenBradley-2.3/configure/RELEASE	2022-02-14 23:04:14.293494296 +0800
+@@ -3,3 +3,6 @@
+ # top directory each time this file is changed.
+ 
+ EPICS_BASE=/opt/epics/base
++-include $(TOP)/../RELEASE.local
++-include $(TOP)/../RELEASE.$(EPICS_HOST_ARCH).local
++-include $(TOP)/configure/RELEASE.local

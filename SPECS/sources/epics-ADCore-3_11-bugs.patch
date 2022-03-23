@@ -1,0 +1,12 @@
+diff -ur ADCore-R3-11/iocBoot/commonPlugins.cmd ADCore-R3-11/iocBoot/commonPlugins.cmd
+--- ADCore-R3-11/iocBoot/commonPlugins.cmd	2019-08-17 05:55:20.000000000 +0800
++++ ADCore-R3-11/iocBoot/commonPlugins.cmd	2020-09-27 00:08:07.717426971 +0800
+@@ -205,7 +205,7 @@
+ 
+ # Optional: load sseq record for acquisition sequence
+ #dbLoadRecords("$(CALC)/calcApp/Db/sseqRecord.db", "P=$(PREFIX), S=AcquireSequence")
+-#set_requestfile_path("$(CALC)/calcApp/Db")
++set_requestfile_path("$(CALC)/calcApp/Db")
+ 
+ # Optional: load devIocStats records (requires DEVIOCSTATS module)
+ #dbLoadRecords("$(DEVIOCSTATS)/db/iocAdminSoft.db", "IOC=$(PREFIX)")

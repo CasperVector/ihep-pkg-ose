@@ -1,0 +1,12 @@
+diff -ur camac-R2-7-3/configure/RELEASE camac-R2-7-3/configure/RELEASE
+--- camac-R2-7-3/configure/RELEASE	2020-06-19 00:52:10.000000000 +0800
++++ camac-R2-7-3/configure/RELEASE	2022-02-15 09:26:37.869093811 +0800
+@@ -17,7 +17,7 @@
+ CALC=$(SUPPORT)/calc
+ 
+ # For recDynLink for swait record from calc
+-SSCAN=$(SUPPORT)/sscan
++#SSCAN=$(SUPPORT)/sscan
+ 
+ # For motor record
+ MOTOR=$(SUPPORT)/motor

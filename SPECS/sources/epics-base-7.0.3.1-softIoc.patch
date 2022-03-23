@@ -1,0 +1,30 @@
+diff -ur base-7.0.3.1/modules/database/src/std/softIoc/Makefile base-7.0.3.1/modules/database/src/std/softIoc/Makefile
+--- base-7.0.3.1/modules/database/src/std/softIoc/Makefile	2019-11-02 03:08:44.000000000 +0800
++++ base-7.0.3.1/modules/database/src/std/softIoc/Makefile	2021-07-22 03:55:45.421135991 +0800
+@@ -9,7 +9,7 @@
+ 
+ SRC_DIRS += $(STDDIR)/softIoc
+ 
+-PROD_IOC_DEFAULT = softIoc
++#PROD_IOC_DEFAULT = softIoc
+ PROD_IOC_iOS = -nil-
+ 
+ DBD += base.dbd
+diff -ur base-7.0.3.1/modules/database/src/std/softIoc/softIocExit.db base-7.0.3.1/modules/database/src/std/softIoc/softIocExit.db
+--- base-7.0.3.1/modules/database/src/std/softIoc/softIocExit.db	2019-11-02 03:08:44.000000000 +0800
++++ base-7.0.3.1/modules/database/src/std/softIoc/softIocExit.db	2021-07-22 03:55:04.798138615 +0800
+@@ -1,12 +1,12 @@
+ # softIocExit.db
+ 
+-record(sub,"$(IOC):exit") {
++record(sub,"$(IOC)exit") {
+     field(DESC,"Exit subroutine")
+     field(SCAN,"Passive")
+     field(SNAM,"exit")
+ }
+ 
+-record(stringin,"$(IOC):BaseVersion") {
++record(stringin,"$(IOC)BaseVersion") {
+     field(DESC,"EPICS Base Version")
+     field(DTYP,"getenv")
+     field(INP,"@EPICS_VERSION_FULL")

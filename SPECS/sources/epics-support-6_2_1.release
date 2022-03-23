@@ -1,0 +1,52 @@
+SUPPORT=@epics_root@
+-include $(TOP)/configure/SUPPORT.$(EPICS_HOST_ARCH)
+EPICS_BASE=@etop_base@
+-include $(TOP)/configure/EPICS_BASE
+-include $(TOP)/configure/EPICS_BASE.$(EPICS_HOST_ARCH)
+
+ALIVE=$(SUPPORT)/alive
+ALLENBRADLEY=$(SUPPORT)/allenBradley
+ASYN=$(SUPPORT)/asyn
+AUTOSAVE=$(SUPPORT)/autosave
+BUSY=$(SUPPORT)/busy
+CALC=$(SUPPORT)/calc
+CAMAC=$(SUPPORT)/camac
+CAPUTRECORDER=$(SUPPORT)/caputRecorder
+DAC128V=$(SUPPORT)/dac128V
+DELAYGEN=$(SUPPORT)/delaygen
+DEVIOCSTATS=$(SUPPORT)/iocStats
+DXP=$(SUPPORT)/dxp
+DXP_SITORO=$(SUPPORT)/dxpSITORO
+ETHERIP=$(SUPPORT)/ether_ip
+GALIL=$(SUPPORT)/Galil
+IP=$(SUPPORT)/ip
+IP330=$(SUPPORT)/ip330
+IPAC=$(SUPPORT)/ipac
+IPUNIDIG=$(SUPPORT)/ipUnidig
+LOVE=$(SUPPORT)/love
+LUA=$(SUPPORT)/lua
+MCA=$(SUPPORT)/mca
+MEASCOMP=$(SUPPORT)/measComp
+MODBUS=$(SUPPORT)/modbus
+MOTOR=$(SUPPORT)/motor
+OPTICS=$(SUPPORT)/optics
+QUADEM=$(SUPPORT)/quadEM
+SCALER=$(SUPPORT)/scaler
+SNCSEQ=$(SUPPORT)/seq
+SOFTGLUE=$(SUPPORT)/softGlue
+SOFTGLUEZYNQ=$(SUPPORT)/softGlueZynq
+SSCAN=$(SUPPORT)/sscan
+STD=$(SUPPORT)/std
+STREAM=$(SUPPORT)/StreamDevice
+VAC=$(SUPPORT)/vac
+VME=$(SUPPORT)/vme
+XXX=$(SUPPORT)/xxx
+YOKOGAWA_DAS=$(SUPPORT)/Yokogawa_DAS
+AREA_DETECTOR=$(SUPPORT)/areaDetector
+ADCORE=$(AREA_DETECTOR)/ADCore
+ADSUPPORT=$(AREA_DETECTOR)/ADSupport
+
+-include $(TOP)/RELEASE.local
+-include $(TOP)/RELEASE.$(EPICS_HOST_ARCH).local
+-include $(TOP)/configure/RELEASE.local
+

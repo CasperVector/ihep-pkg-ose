@@ -1,0 +1,12 @@
+diff -ur busy-R1-7-3/configure/RELEASE busy-R1-7-3/configure/RELEASE
+--- busy-R1-7-3/configure/RELEASE	2020-10-05 13:10:16.000000000 +0800
++++ busy-R1-7-3/configure/RELEASE	2022-02-15 22:43:01.328377208 +0800
+@@ -10,7 +10,7 @@
+ ASYN=$(SUPPORT)/asyn
+ 
+ # AUTOSAVE is needed for the test application only
+-AUTOSAVE=$(SUPPORT)/autosave
++#AUTOSAVE=$(SUPPORT)/autosave
+ 
+ # BUSY is this module
+ BUSY=$(SUPPORT)/busy

@@ -1,0 +1,10 @@
+diff -Nur asyn-R4-42/iocsh/serial.cmd asyn-R4-42/iocsh/serial.cmd
+--- asyn-R4-42/iocsh/serial.cmd       1970-01-01 08:00:00.000000000 +0800
++++ asyn-R4-42/iocsh/serial.cmd       2021-07-08 01:39:44.702146813 +0800
+@@ -0,0 +1,6 @@
++drvAsynSerialPortConfigure("${PORT}", "${DEVICE}")
++asynSetOption("${PORT}", 0, "baud", "${BAUD=9600}")
++asynSetOption("${PORT}", 0, "bits", "${BITS=8}")
++asynSetOption("${PORT}", 0, "stop", "${STOP=1}")
++asynSetOption("${PORT}", 0, "parity", "${PARITY=none}")
++

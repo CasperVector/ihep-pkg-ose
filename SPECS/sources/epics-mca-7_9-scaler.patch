@@ -1,0 +1,59 @@
+From aab74a53403f3c5654cddd9e6d6322f2bad3ede8 Mon Sep 17 00:00:00 2001
+From: Mark Rivers <rivers@cars.uchicago.edu>
+Date: Wed, 9 Dec 2020 11:02:10 -0600
+Subject: [PATCH] Scaler code moved from std to scaler module
+
+---
+ configure/RELEASE                    | 2 +-
+ mcaApp/SISSrc/Makefile               | 4 ++--
+ mcaApp/SISSrc/SIS38XXTestInclude.dbd | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/configure/RELEASE b/configure/RELEASE
+index 3f03eda..602a38d 100644
+--- a/configure/RELEASE
++++ b/configure/RELEASE
+@@ -19,7 +19,7 @@ SSCAN=$(SUPPORT)/sscan
+ BUSY=$(SUPPORT)/busy
+ 
+ # Scaler record
+-STD=$(SUPPORT)/std
++SCALER=$(SUPPORT)/scaler
+ 
+ # SISSrc uses the sequencer
+ SNCSEQ=$(SUPPORT)/seq
+diff --git a/mcaApp/SISSrc/Makefile b/mcaApp/SISSrc/Makefile
+index c47764a..8e335ee 100644
+--- a/mcaApp/SISSrc/Makefile
++++ b/mcaApp/SISSrc/Makefile
+@@ -25,7 +25,7 @@ SIS38XX_SRCS += drvSIS3801.cpp
+ SIS38XX_SRCS += SIS38XX_SNL.st
+ SIS38XX_SRCS += sis3820_jtag_prom_epics
+ SIS38XX_LIBS += mca
+-SIS38XX_LIBS += std
++SIS38XX_LIBS += scaler
+ SIS38XX_LIBS += busy
+ SIS38XX_LIBS += calc autosave
+ SIS38XX_LIBS += asyn
+@@ -44,7 +44,7 @@ SIS38XXTest_SRCS_DEFAULT += SIS38XXTestMain.cpp
+ SIS38XXTest_SRCS_vxWorks += -nil-
+ SIS38XXTest_LIBS += SIS38XX
+ SIS38XXTest_LIBS += mca
+-SIS38XXTest_LIBS += std
++SIS38XXTest_LIBS += scaler
+ SIS38XXTest_LIBS += busy
+ SIS38XXTest_LIBS += calc autosave
+ SIS38XXTest_LIBS += sscan
+diff --git a/mcaApp/SISSrc/SIS38XXTestInclude.dbd b/mcaApp/SISSrc/SIS38XXTestInclude.dbd
+index eed0401..8b7fa28 100644
+--- a/mcaApp/SISSrc/SIS38XXTestInclude.dbd
++++ b/mcaApp/SISSrc/SIS38XXTestInclude.dbd
+@@ -1,7 +1,7 @@
+ include "base.dbd"
+ include "asyn.dbd"
+ include "mcaSupport.dbd"
+-include "stdSupport.dbd"
++include "scalerSupport.dbd"
+ # Comment out the following line except for vxWorks
+ include "SIS38XXSupport.dbd"
+ include "calcSupport.dbd"

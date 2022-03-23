@@ -1,0 +1,34 @@
+diff -ur StreamDevice-2.8.16/configure/RELEASE StreamDevice-2.8.16/configure/RELEASE
+--- StreamDevice-2.8.16/configure/RELEASE	2020-08-18 20:46:16.000000000 +0800
++++ StreamDevice-2.8.16/configure/RELEASE	2022-02-14 17:50:50.839964265 +0800
+@@ -18,8 +18,10 @@
+ -include $(TOP)/../configure/SUPPORT.$(EPICS_HOST_ARCH)
+ 
+ ASYN=$(SUPPORT)/asyn
+-CALC=$(SUPPORT)/calc
+-PCRE=$(SUPPORT)/pcre-7-2
++#CALC=$(SUPPORT)/calc
++#PCRE=$(SUPPORT)/pcre
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ 
+ # EPICS_BASE usually appears last so other apps can override stuff:
+ EPICS_BASE=/opt/epics/base
+diff -ur StreamDevice-2.8.16/streamApp/Makefile StreamDevice-2.8.16/streamApp/Makefile
+--- StreamDevice-2.8.16/streamApp/Makefile	2019-08-17 05:56:16.000000000 +0800
++++ StreamDevice-2.8.16/streamApp/Makefile	2021-07-22 01:57:55.899592527 +0800
+@@ -50,6 +50,14 @@
+ # cygwin needs separate RPC library for asyn
+ PROD_SYS_LIBS_cygwin32 += $(CYGWIN_RPC_LIB)
+ endif
++ifdef AUTOSAVE
++streamApp_DBD += asSupport.dbd
++PROD_LIBS += autosave
++endif
++ifdef DEVIOCSTATS
++streamApp_DBD += devIocStats.dbd
++PROD_LIBS += devIocStats
++endif
+ 
+ ifneq ($(words $(CALC) $(SYNAPPS)), 0)
+ # With synApps scalcout record

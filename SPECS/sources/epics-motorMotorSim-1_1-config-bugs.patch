@@ -1,0 +1,26 @@
+diff -ur motorMotorSim-R1-1/iocs/motorSimIOC/motorSimApp/src/Makefile motorMotorSim-R1-1/iocs/motorSimIOC/motorSimApp/src/Makefile
+--- motorMotorSim-R1-1/iocs/motorSimIOC/motorSimApp/src/Makefile	2020-05-13 06:03:11.000000000 +0800
++++ motorMotorSim-R1-1/iocs/motorSimIOC/motorSimApp/src/Makefile	2022-02-17 01:44:59.381476185 +0800
+@@ -42,6 +42,10 @@
+ motorSim_SRCS_DEFAULT += motorSimMain.cpp
+ motorSim_SRCS_vxWorks += -nil-
+ 
++# Ugly hack to work around `motorSimSupport' masking `motor' in the
++# expansion of `$(1)_DEPLIBS' in `RULES_TARGET'
++PROD_DEPLIBS := $(MOTOR)/lib/$(T_A)/libmotor.so
++
+ # Add support from base/src/vxWorks if needed
+ #motorSim_OBJS_vxWorks += $(EPICS_BASE_BIN)/vxComLibrary
+ 
+diff -ur motorMotorSim-R1-1/motorSimApp/src/Makefile motorMotorSim-R1-1/motorSimApp/src/Makefile
+--- motorMotorSim-R1-1/motorSimApp/src/Makefile	2020-05-13 06:03:11.000000000 +0800
++++ motorMotorSim-R1-1/motorSimApp/src/Makefile	2022-02-17 00:53:11.962508457 +0800
+@@ -28,7 +28,7 @@
+ #=============================
+ # build an ioc application
+ 
+-PROD_IOC = motorSim
++#PROD_IOC = motorSim
+ # motorSim.dbd will be created and installed
+ DBD += motorSim.dbd
+ 

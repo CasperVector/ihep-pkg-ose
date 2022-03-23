@@ -1,0 +1,47 @@
+diff -Nur system/mxloadsvr.service system/mxloadsvr.service
+--- system/mxloadsvr.service	1970-01-01 08:00:00.000000000 +0800
++++ system/mxloadsvr.service	2021-07-21 13:59:41.486896677 +0800
+@@ -0,0 +1,9 @@
++[Unit]
++Description=mxloadsvr
++Requires=local-fs.target
++After=local-fs.target
++
++[Service]
++Type=oneshot
++ExecStart=/usr/bin/mxloadsvr
++
+diff -Nur system/npreal2d.service system/npreal2d.service
+--- system/npreal2d.service	1970-01-01 08:00:00.000000000 +0800
++++ system/npreal2d.service	2021-07-21 13:59:41.487896677 +0800
+@@ -0,0 +1,13 @@
++[Unit]
++Description=npreal2d
++Requires=mxloadsvr.service
++After=mxloadsvr.service
++
++[Service]
++User=npreal2
++ExecStart=/usr/bin/npreal2d -f -t 1
++Restart=always
++
++[Install]
++WantedBy=multi-user.target
++
+diff -Nur system/redund.service system/redund.service
+--- system/redund.service	1970-01-01 08:00:00.000000000 +0800
++++ system/redund.service	2021-07-21 13:59:41.487896677 +0800
+@@ -0,0 +1,13 @@
++[Unit]
++Description=redund
++Requires=mxloadsvr.service
++After=mxloadsvr.service
++
++[Service]
++User=npreal2
++ExecStart=/usr/bin/redund -f -t 1
++Restart=always
++
++[Install]
++WantedBy=multi-user.target
++

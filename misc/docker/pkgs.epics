@@ -1,0 +1,5 @@
+gcc
+gcc-c++
+epics-base
+epics-motor
+epics-ADCore

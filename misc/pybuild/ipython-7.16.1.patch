@@ -1,0 +1,56 @@
+diff -ur ipython-7.16.1-orig/IPython/core/completer.py ipython-7.16.1/IPython/core/completer.py
+--- ipython-7.16.1-orig/IPython/core/completer.py	2020-06-27 05:59:52.000000000 +0800
++++ ipython-7.16.1/IPython/core/completer.py	2021-07-25 02:08:33.565035765 +0800
+@@ -988,7 +988,16 @@
+ 
+     """
+ 
+-    return '(%s)'% ', '.join([f for f in (_formatparamchildren(p) for p in completion.params) if f])
++    if hasattr(completion, 'get_signatures'):
++        signatures = completion.get_signatures()
++        if not signatures:
++            return  '(?)'
++
++        c0 = completion.get_signatures()[0]
++        return '('+c0.to_string().split('(', maxsplit=1)[1]
++
++    return '(%s)'% ', '.join([f for f in (_formatparamchildren(p) for signature in completion.get_signatures()
++                                          for p in signature.defined_names()) if f])
+ 
+ class IPCompleter(Completer):
+     """Extension of the completer class with IPython-specific features"""
+@@ -1370,8 +1379,7 @@
+                 else:
+                     raise ValueError("Don't understand self.omit__names == {}".format(self.omit__names))
+ 
+-        interpreter = jedi.Interpreter(
+-            text[:offset], namespaces, column=cursor_column, line=cursor_line + 1)
++        interpreter = jedi.Interpreter(text[:offset], namespaces)
+         try_jedi = True
+ 
+         try:
+@@ -1398,7 +1406,7 @@
+         if not try_jedi:
+             return []
+         try:
+-            return filter(completion_filter, interpreter.completions())
++            return filter(completion_filter, interpreter.complete(column=cursor_column, line=cursor_line + 1))
+         except Exception as e:
+             if self.debug:
+                 return [_FakeJediCompletion('Oops Jedi has crashed, please report a bug with the following:\n"""\n%s\ns"""' % (e))]
+diff -ur ipython-7.16.1-orig/IPython/terminal/ptutils.py ipython-7.16.1/IPython/terminal/ptutils.py
+--- ipython-7.16.1-orig/IPython/terminal/ptutils.py	2020-06-15 10:07:24.000000000 +0800
++++ ipython-7.16.1/IPython/terminal/ptutils.py	2021-07-25 01:49:38.788109047 +0800
+@@ -111,9 +111,9 @@
+             offset = cursor_to_position(body, cursor_row, cursor_col)
+             try:
+                 yield from self._get_completions(body, offset, cursor_position, self.ipy_completer)
+-            except Exception as e:
+-                from traceback import print_tb
+-                print_tb(e)
++            except Exception:
++                from traceback import print_exc
++                print_exc()
+ 
+     @staticmethod
+     def _get_completions(body, offset, cursor_position, ipyc):

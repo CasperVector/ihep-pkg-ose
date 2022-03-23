@@ -1,0 +1,102 @@
+diff -Nur epics-Keithley_648x.orig/configure/RELEASE epics-Keithley_648x/configure/RELEASE
+--- epics-Keithley_648x.orig/configure/RELEASE	2021-07-21 18:15:06.000000000 +0000
++++ epics-Keithley_648x/configure/RELEASE	2021-07-21 18:57:47.000000000 +0000
+@@ -13,6 +13,8 @@
+ -include $(TOP)/../configure/SUPPORT.$(EPICS_HOST_ARCH)
+ 
+-#ASYN=$(SUPPORT)/asyn
++ASYN=$(SUPPORT)/asyn
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ 
+ EPICS_BASE=/opt/epics/base
+ -include $(TOP)/../configure/EPICS_BASE.$(EPICS_HOST_ARCH)
+diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/controller.cmd epics-Keithley_648x/iocBoot/iock648x/controller.cmd
+--- epics-Keithley_648x.orig/iocBoot/iock648x/controller.cmd	1970-01-01 08:00:00.000000000 +0800
++++ epics-Keithley_648x/iocBoot/iock648x/controller.cmd	2021-07-08 16:34:34.611546000 +0800
+@@ -0,0 +1,6 @@
++iocshLoad("$(ASYN)/iocsh/serial.cmd","PORT=${APORT}")
++asynOctetSetInputEos("${APORT}",0,"\r")
++asynOctetSetOutputEos("${APORT}",0,"\r")
++asynOctetConnect("${APORT}","${APORT}")
++drvAsynKeithley648x("${K648X}","${PORT}","${APORT}",-1)
++
+diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd epics-Keithley_648x/iocBoot/iock648x/st.cmd
+--- epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd	2019-03-07 00:09:38.000000000 +0800
++++ epics-Keithley_648x/iocBoot/iock648x/st.cmd	2021-07-08 17:15:17.229388366 +0800
+@@ -1,51 +1,20 @@
+ #!../../bin/linux-x86_64/k648x
+ 
+ < envPaths
+-
+ cd ${TOP}
+ 
+-
+ ## Register all support components
+ dbLoadDatabase "dbd/k648x.dbd"
+ k648x_registerRecordDeviceDriver pdbbase
+ 
+-
+ cd ${TOP}/iocBoot/${IOC}
+-
+-
+-# serial 1
+-#drvAsynSerialPortConfigure("portName","ttyName",priority,noAutoConnect,
+-#                            noProcessEos)
+-drvAsynSerialPortConfigure("serial1", "/dev/ttyS1", 0, 0, 0)
+-asynSetOption(serial1, 0, "baud",   "9600")
+-asynSetOption(serial1, 0, "bits",   "8")
+-asynSetOption(serial1, 0, "parity", "none")
+-asynSetOption(serial1, 0, "stop",   "1")
+-#asynOctetSetInputEos(const char *portName, int addr,
+-#                     const char *eosin,const char *drvInfo)
+-asynOctetSetInputEos("serial1",0,"\r")
+-# asynOctetSetOutputEos(const char *portName, int addr,
+-#                       const char *eosin,const char *drvInfo)
+-asynOctetSetOutputEos("serial1",0,"\r")
+-# Make port available from the iocsh command line
+-#asynOctetConnect(const char *entry, const char *port, int addr,
+-#                 int timeout, int buffer_len, const char *drvInfo)
+-asynOctetConnect("serial1", "serial1")
+-
+-
+-
+-#drvAsynKeithley648x("6487", "CA1","serial1",-1);
+-#dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6487.db","P=k648x:,CA=CA1:,PORT=CA1"
+-
+-drvAsynKeithley648x("6485", "CA1","serial1",-1);
+-dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6485.db","P=k648x:,CA=CA1:,PORT=CA1"
+-
+-
++#iocshLoad("controller.cmd","K648X=6487,PORT=CA1,APORT=serial1,DEVICE=/dev/ttyS1")
++#dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6487.db","P=k648x:,CA=CA1:,PORT=CA1")
++iocshLoad("controller.cmd","K648X=6485,PORT=CA1,APORT=serial1,DEVICE=/dev/ttyS1")
++dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6485.db","P=k648x:,CA=CA1:,PORT=CA1")
+ 
+ dbLoadRecords("$(ASYN)/db/asynRecord.db", "P=k648x:,R=asyn_k648x,PORT=serial1,ADDR=0,OMAX=256,IMAX=2048")
+-
+ ## Run this to trace the stages of iocInit
+ #traceIocInit
+-
+ iocInit
+ 
+diff -Nur epics-Keithley_648x.orig/k648xApp/src/Makefile epics-Keithley_648x/k648xApp/src/Makefile
+--- epics-Keithley_648x.orig/k648xApp/src/Makefile	2019-03-07 00:09:38.000000000 +0800
++++ epics-Keithley_648x/k648xApp/src/Makefile	2021-07-22 02:23:59.656491543 +0800
+@@ -46,8 +46,14 @@
+ #k648x_DBD += drvAsynIPPort.dbd
+ #k648x_DBD += drvVxi11.dbd
+ #k648x_DBD += devGpib.dbd
+-
+-
++#ifdef AUTOSAVE
++k648x_DBD += asSupport.dbd
++k648x_LIBS += autosave
++#endif
++#ifdef DEVIOCSTATS
++k648x_DBD += devIocStats.dbd
++k648x_LIBS += devIocStats
++#endif
+ 
+ ###k648x_DBD += xxxSupport.dbd
+ ###k648x_DBD += dbSubExample.dbd

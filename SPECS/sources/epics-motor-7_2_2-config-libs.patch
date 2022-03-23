@@ -1,0 +1,64 @@
+diff -ur motor-R7-2-2/configure/CONFIG motor-R7-2-2/configure/CONFIG
+--- motor-R7-2-2/configure/CONFIG	2021-02-03 02:19:45.000000000 +0800
++++ motor-R7-2-2/configure/CONFIG	2022-02-14 16:46:46.348103583 +0800
+@@ -17,7 +17,7 @@
+ include $(CONFIG)/CONFIG
+ 
+ # Override the Base definition:
+-INSTALL_LOCATION = $(TOP)
++#INSTALL_LOCATION = $(TOP)
+ 
+ # CONFIG_SITE files contain other build configuration settings
+ include $(TOP)/configure/CONFIG_SITE
+diff -ur motor-R7-2-2/configure/RELEASE motor-R7-2-2/configure/RELEASE
+--- motor-R7-2-2/configure/RELEASE	2021-02-03 02:19:45.000000000 +0800
++++ motor-R7-2-2/configure/RELEASE	2022-02-14 16:46:46.348103583 +0800
+@@ -30,7 +30,7 @@
+ 
+ # IPAC is required to build motorHytec
+ # Recommended IPAC release: R2-15
+-IPAC=$(SUPPORT)/ipac
++#!IPAC=$(SUPPORT)/ipac
+ 
+ # Script module needed to build motorScriptMotor
+ #!LUA=$(SUPPORT)/lua-R1-3
+@@ -39,6 +39,9 @@
+ # Required MODBUS release: R2-11 or later
+ #!MODBUS=$(SUPPORT)/modbus-R2-11
+ 
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
++
+ # The following is only needed for the motor examples in iocBoot.
+ #!MOTOR=$(TOP)
+ 
+diff -ur motor-R7-2-2/modules/CONFIG_SITE.local motor-R7-2-2/modules/CONFIG_SITE.local
+--- motor-R7-2-2/modules/CONFIG_SITE.local	2021-02-03 02:19:45.000000000 +0800
++++ motor-R7-2-2/modules/CONFIG_SITE.local	2022-02-14 16:46:46.348103583 +0800
+@@ -2,7 +2,7 @@
+ -include $(MOTOR)/configure/CONFIG_SITE
+ 
+ # When building submodules, this should always be true:
+-INSTALL_LOCATION = $(MOTOR)
++#INSTALL_LOCATION = $(MOTOR)
+ 
+ # Stop submodules from installing their configuration files:
+ CONFIG_INSTALLS =
+diff -ur motor-R7-2-2/modules/Makefile motor-R7-2-2/modules/Makefile
+--- motor-R7-2-2/modules/Makefile	2021-02-03 02:19:45.000000000 +0800
++++ motor-R7-2-2/modules/Makefile	2022-02-14 16:46:46.348103583 +0800
+@@ -88,6 +88,14 @@
+ 	$(ECHO) Creating $@, MODBUS = $(MODBUS)
+ 	@echo MODBUS = $(MODBUS)>> $@
+ endif
++ifdef AUTOSAVE
++	$(ECHO) Creating $@, AUTOSAVE = $(AUTOSAVE)
++	@echo AUTOSAVE = $(AUTOSAVE)>> $@
++endif
++ifdef DEVIOCSTATS
++	$(ECHO) Creating $@, DEVIOCSTATS = $(DEVIOCSTATS)
++	@echo DEVIOCSTATS = $(DEVIOCSTATS)>> $@
++endif
+ 	$(ECHO) Creating $@, EPICS_BASE = $(EPICS_BASE)
+ 	@echo EPICS_BASE = $(EPICS_BASE)>> $@
+ 	

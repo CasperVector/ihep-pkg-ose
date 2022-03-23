@@ -1,0 +1,17 @@
+diff -ur calc-R3-7-4/configure/RELEASE calc-R3-7-4/configure/RELEASE
+--- calc-R3-7-4/configure/RELEASE	2020-04-18 01:15:11.000000000 +0800
++++ calc-R3-7-4/configure/RELEASE	2022-02-14 15:21:42.185248913 +0800
+@@ -9,11 +9,11 @@
+ # Need SSCAN module only to build the swait record (recDynLink library)
+ # If you comment this definition out, the module will just decline to
+ # build the swait record.
+-SSCAN=$(SUPPORT)/sscan
++#SSCAN=$(SUPPORT)/sscan
+ 
+ # Need SNCSEQ module only to build editSseq.st.  If you comment this
+ # definition out, the module will just decline to build editSseq.st.
+-#SNCSEQ=$(SUPPORT)/seq-2-1-16
++SNCSEQ=$(SUPPORT)/seq
+ 
+ # EPICS_BASE usually appears last so other apps can override stuff:
+ EPICS_BASE=/opt/epics/base

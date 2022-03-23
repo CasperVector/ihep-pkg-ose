@@ -1,0 +1,20 @@
+diff -ur ipac-2.16/drvIpac/drvIpac.dbd ipac-2.16/drvIpac/drvIpac.dbd
+--- ipac-2.16/drvIpac/drvIpac.dbd	2020-10-07 02:09:05.000000000 +0800
++++ ipac-2.16/drvIpac/drvIpac.dbd	2022-02-14 00:51:14.033813054 +0800
+@@ -6,11 +6,11 @@
+ # Register your carrier driver(s) by copying one or more of these
+ # lines corresponding to your carrier(s) into your IOC's DBD file
+ #registrar(mv162ipRegistrar)
+-#registrar(vipc310Registrar)
+-#registrar(vipc610Registrar)
+-#registrar(vipc616Registrar)
+-#registrar(tvme200Registrar)
+-#registrar(xy9660Registrar)
++registrar(vipc310Registrar)
++registrar(vipc610Registrar)
++registrar(vipc616Registrar)
++registrar(tvme200Registrar)
++registrar(xy9660Registrar)
+ #registrar(Hy8002Registrar)
+ 
+ # The ATC40 carrier builds on ISA-bus (x86) systems only:

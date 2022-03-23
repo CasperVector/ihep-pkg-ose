@@ -1,0 +1,8 @@
+ARG parent
+FROM "$parent"
+ADD prep-pkgs.sh /prep.sh
+ADD RPMS /home/builder/RPMS
+USER root
+RUN chmod 0755 /prep.sh && /prep.sh
+USER builder
+

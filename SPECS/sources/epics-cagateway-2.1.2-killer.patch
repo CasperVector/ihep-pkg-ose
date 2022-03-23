@@ -1,0 +1,14 @@
+diff -ur ca-gateway-2.1.2/src/gateResources.h ca-gateway-2.1.2/src/gateResources.h
+--- ca-gateway-2.1.2/src/gateResources.h	2019-10-25 21:06:42.000000000 +0800
++++ ca-gateway-2.1.2/src/gateResources.h	2021-05-06 19:55:49.380633431 +0800
+@@ -15,8 +15,8 @@
+ #define __GATE_RESOURCES_H
+ 
+ #define GATE_LOG_FILE       "gateway.log"
+-#define GATE_SCRIPT_FILE    "gateway.killer"
+-#define GATE_RESTART_FILE   "gateway.restart"
++#define GATE_SCRIPT_FILE    ""
++#define GATE_RESTART_FILE   ""
+ #define GATE_PV_LIST_FILE   "gateway.pvlist"
+ #define GATE_PV_ACCESS_FILE "gateway.access"
+ #define GATE_COMMAND_FILE   "gateway.command"

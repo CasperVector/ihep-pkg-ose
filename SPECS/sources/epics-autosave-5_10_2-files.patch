@@ -1,0 +1,12 @@
+--- autosave-R5-10-2/iocsh/autosave.cmd	1970-01-01 08:00:00.000000000 +0800
++++ autosave-R5-10-2/iocsh/autosave.cmd	2021-07-22 02:10:23.341544259 +0800
+@@ -0,0 +1,9 @@
++set_requestfile_path("./")
++set_requestfile_path("${TOP}/db")
++set_savefile_path("${HOME}/iocBoot/autosave/${IOC}")
++set_pass0_restoreFile("auto_positions.sav")
++set_pass0_restoreFile("auto_settings.sav")
++set_pass1_restoreFile("auto_settings.sav")
++save_restoreSet_status_prefix("${P}")
++dbLoadRecords("$(AUTOSAVE)/db/save_restoreStatus.db","P=${P}")
++

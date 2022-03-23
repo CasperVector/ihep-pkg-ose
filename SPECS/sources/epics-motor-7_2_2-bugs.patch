@@ -1,0 +1,29 @@
+From 784e41927b942d38c31a766309668d6114861b9e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Torsten=20B=C3=B6gershausen?= <torsten.bogershausen@esss.se>
+Date: Mon, 19 Apr 2021 14:19:12 +0200
+Subject: [PATCH] motordrvCom.h needs shareLib.h
+
+We can't compile motor against this commit of EPICS base:
+  commit 0f428ea3346d89719b03a6419319c85afb0fee13
+  Author: Michael Davidsaver <mdavidsaver@gmail.com>
+  Date:   Thu Apr 1 10:57:19 2021 -0700
+
+      use DBCORE_API
+
+Solution: Include <shareLib.h>
+---
+ motorApp/MotorSrc/motordrvCom.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/motorApp/MotorSrc/motordrvCom.h b/motorApp/MotorSrc/motordrvCom.h
+index 98e736af..4f701ffa 100644
+--- a/motorApp/MotorSrc/motordrvCom.h
++++ b/motorApp/MotorSrc/motordrvCom.h
+@@ -45,6 +45,7 @@ USAGE...	This file contains definitions and structures that
+ #ifndef	INCmotordrvComh
+ #define	INCmotordrvComh 1
+ 
++#include <shareLib.h>
+ #include <callback.h>
+ #include <epicsTypes.h>
+ #include <epicsEvent.h>

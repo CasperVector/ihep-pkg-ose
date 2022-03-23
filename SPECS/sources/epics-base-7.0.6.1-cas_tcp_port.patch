@@ -1,0 +1,25 @@
+diff -ur base-7.0.3-orig/modules/database/src/ioc/rsrv/caservertask.c base-7.0.3/modules/database/src/ioc/rsrv/caservertask.c
+--- base-7.0.3-orig/modules/database/src/ioc/rsrv/caservertask.c	2019-08-01 01:11:22.000000000 +0800
++++ base-7.0.3/modules/database/src/ioc/rsrv/caservertask.c	2020-04-16 21:20:56.272178932 +0800
+@@ -582,6 +582,10 @@
+     }
+ 
+     {
++        if ( envGetConfigParamPtr ( &EPICS_CAS_TCP_PORT ) ) {
++            ca_server_port = envGetInetPortConfigParam ( &EPICS_CAS_TCP_PORT,
++                (unsigned short) CA_SERVER_PORT );
++        }
+         unsigned short sport = ca_server_port;
+         socks = rsrv_grab_tcp(&sport);
+ 
+diff -ur base-7.0.3-orig/modules/libcom/src/env/envDefs.h base-7.0.3/modules/libcom/src/env/envDefs.h
+--- base-7.0.3-orig/modules/libcom/src/env/envDefs.h	2019-08-01 01:11:22.000000000 +0800
++++ base-7.0.3/modules/libcom/src/env/envDefs.h	2020-04-16 21:20:56.273178940 +0800
+@@ -57,6 +57,7 @@
+ LIBCOM_API extern const ENV_PARAM EPICS_CAS_AUTO_BEACON_ADDR_LIST;
+ LIBCOM_API extern const ENV_PARAM EPICS_CAS_BEACON_ADDR_LIST;
+ LIBCOM_API extern const ENV_PARAM EPICS_CAS_SERVER_PORT;
++LIBCOM_API extern const ENV_PARAM EPICS_CAS_TCP_PORT; /**< \brief non-standard */
+ LIBCOM_API extern const ENV_PARAM EPICS_CA_BEACON_PERIOD; /**< \brief deprecated */
+ LIBCOM_API extern const ENV_PARAM EPICS_CAS_BEACON_PERIOD;
+ LIBCOM_API extern const ENV_PARAM EPICS_CAS_BEACON_PORT;

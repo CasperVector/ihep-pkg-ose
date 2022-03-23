@@ -1,0 +1,19 @@
+diff -ur base-7.0.3-orig/configure/os/CONFIG.Common.UnixCommon base-7.0.3/configure/os/CONFIG.Common.UnixCommon
+--- base-7.0.3-orig/configure/os/CONFIG.Common.UnixCommon	2019-08-01 01:11:22.000000000 +0800
++++ base-7.0.3/configure/os/CONFIG.Common.UnixCommon	2020-04-25 01:34:12.505458151 +0800
+@@ -59,6 +59,7 @@
+     $(shell $(FULLPATHNAME) $(word)))
+ 
+ SHRLIBDIR_LDFLAGS += $(SHRLIB_DEPLIB_DIRS:%=-L%)
++SHRLIB_RDEPLIB_DIRS = $(SHRLIB_DEPLIB_DIRS:$(DESTDIR)/%=/%)
+ 
+ #-------------------------------------------------------
+ # Prod: PROD_DEPLIBS, PROD_LDLIBS and PRODDIR_LDFLAGS definitions
+@@ -88,6 +89,7 @@
+     $(shell $(FULLPATHNAME) $(word)))
+ 
+ PRODDIR_LDFLAGS += $(PROD_DEPLIB_DIRS:%=-L%)
++PROD_RDEPLIB_DIRS = $(PROD_DEPLIB_DIRS:$(DESTDIR)/%=/%)
+ 
+ #--------------------------------------------------
+ # Link definitions

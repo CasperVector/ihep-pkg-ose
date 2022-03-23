@@ -1,0 +1,16 @@
+diff --git a/suitcase/utils/__init__.py b/suitcase/utils/__init__.py
+index 9f73e59..3057b04 100644
+--- a/suitcase/utils/__init__.py
++++ b/suitcase/utils/__init__.py
+@@ -90,8 +90,9 @@ class Artifact:
+             orig_close = handle.close
+ 
+             def wrapped_close():
+-                handle.seek(0, os.SEEK_END)
+-                self._final_size = handle.tell()
++                if not handle.closed:
++                    handle.seek(0, os.SEEK_END)
++                    self._final_size = handle.tell()
+                 orig_close()
+ 
+             handle.close = wrapped_close

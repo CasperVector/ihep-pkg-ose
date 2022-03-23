@@ -1,0 +1,10 @@
+diff -ur dxpSITORO-R1-2/configure/CONFIG_SITE dxpSITORO-R1-2/configure/CONFIG_SITE
+--- dxpSITORO-R1-2/configure/CONFIG_SITE	2019-08-17 05:53:19.000000000 +0800
++++ dxpSITORO-R1-2/configure/CONFIG_SITE	2020-09-27 00:07:53.740330439 +0800
+@@ -1,5 +1,5 @@
+ ifeq (Linux, $(OS_CLASS))
+-  STATIC_BUILD=YES
++  STATIC_BUILD=NO
+ endif
+ 
+ # Use site-specific definitions from areaDetector to find HDF5, etc.

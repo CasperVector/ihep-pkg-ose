@@ -1,0 +1,18 @@
+diff -ur imsIOC/imsApp/src/Makefile imsIOC/imsApp/src/Makefile
+--- imsIOC/imsApp/src/Makefile	2019-08-17 05:55:38.000000000 +0800
++++ imsIOC/imsApp/src/Makefile	2021-06-18 20:19:33.128733413 +0800
+@@ -36,6 +36,14 @@
+ #ifdef SNCSEQ
+ ims_LIBS += seq pv
+ #endif
++#ifdef AUTOSAVE
++ims_DBD += asSupport.dbd
++ims_LIBS += autosave
++#endif
++#ifdef DEVIOCSTATS
++ims_DBD += devIocStats.dbd
++ims_LIBS += devIocStats
++#endif
+ 
+ # ims_registerRecordDeviceDriver.cpp derives from ims.dbd
+ ims_SRCS += ims_registerRecordDeviceDriver.cpp

@@ -1,0 +1,136 @@
+diff -Nur s7nodave-3.0.2/configure/RELEASE s7nodave-3.0.2/configure/RELEASE
+--- s7nodave-3.0.2/configure/RELEASE	2018-02-07 20:58:06.000000000 +0000
++++ s7nodave-3.0.2/configure/RELEASE	2021-09-18 16:39:32.000000000 +0000
+@@ -13,6 +13,8 @@
+ -include $(TOP)/../configure/SUPPORT.$(EPICS_HOST_ARCH)
+ 
+-#ASYN=$(SUPPORT)/asyn
++ASYN=$(SUPPORT)/asyn
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ 
+ EPICS_BASE=/opt/epics/base
+ -include $(TOP)/../configure/EPICS_BASE.$(EPICS_HOST_ARCH)
+diff -Nur s7nodave-3.0.2/iocBoot/iocNodave/example.db s7nodave-3.0.2/iocBoot/iocNodave/example.db
+--- s7nodave-3.0.2/iocBoot/iocNodave/example.db	1970-01-01 08:00:00.000000000 +0800
++++ s7nodave-3.0.2/iocBoot/iocNodave/example.db	2021-07-22 02:35:31.091446891 +0800
+@@ -0,0 +1,62 @@
++record(bi,"$(user):SB9")
++{
++	field(DESC,"SB9 input")
++	field(DTYP,"s7nodave")
++	field(SCAN,"I/O Intr")
++	field(INP,"@PLC1 I4.0")
++}
++
++record(bo,"$(user):Alarm")
++{
++	field(DESC,"Alarm output")
++	field(DTYP,"s7nodave")
++	field(OMSL,"supervisory")
++	field(OUT,"@PLC1 Q8.0")
++}
++
++record(bi,"$(user):Alarm_rb")
++{
++	field(DESC,"Alarm readback")
++	field(DTYP,"s7nodave")
++	field(SCAN,"I/O Intr")
++	field(INP,"@PLC1 Q8.0")
++}
++
++record(ai,"$(user):PT1")
++{
++	field(DESC,"Pressure1 sensor input")
++	field(DTYP,"s7nodave")
++	field(SCAN,"I/O Intr")
++	field(INP,"@PLC1 MD212 float")
++	field(EGUL,"1000")
++	field(EGUF,"9999")
++	field(PREC,"2")
++}
++
++record(ao,"$(user):CV1")
++{
++	field(DESC,"Control Valve1 output")
++	field(DTYP,"s7nodave")
++	field(OMSL,"supervisory")
++	field(OUT,"@PLC1 MD248 float")
++	field(DRVH,"100")
++	field(DRVL,"0")
++	field(PREC,"2")
++	field(EGUF,"100")
++	field(EGUL,"0")
++	field(EGU,"%")
++}
++
++record(ai,"$(user):CV1_rb")
++{
++	field(DESC,"Control Valve1 readback")
++	field(DTYP,"s7nodave")
++	field(SCAN,"I/O Intr")
++	field(INP,"@PLC1(DLV=0,DHV=27648) QW320")
++	field(LINR,"LINEAR")
++	field(EGUF,"100")
++	field(EGUL,"0")
++	field(EGU,"%")
++	field(PREC,"2")
++}
++
+diff -Nur s7nodave-3.0.2/iocBoot/iocNodave/st.cmd s7nodave-3.0.2/iocBoot/iocNodave/st.cmd
+--- s7nodave-3.0.2/iocBoot/iocNodave/st.cmd	1970-01-01 08:00:00.000000000 +0800
++++ s7nodave-3.0.2/iocBoot/iocNodave/st.cmd	2021-07-22 02:35:31.091446891 +0800
+@@ -0,0 +1,16 @@
++#!../../bin/linux-x86_64/s7nodaveApp
++
++< envPaths
++cd "${TOP}"
++
++## Register all support components
++dbLoadDatabase "dbd/s7nodaveApp.dbd"
++s7nodaveApp_registerRecordDeviceDriver pdbbase
++
++cd "${TOP}/iocBoot/${IOC}"
++s7nodaveConfigureIsoTcpPort("PLC1", "192.168.1.150", 0, 2, 0)
++s7nodaveConfigurePollGroup("PLC1", "default", 1.0, 0)
++
++dbLoadRecords("example.db", "user=CryMon")
++iocInit
++
+diff -Nur s7nodave-3.0.2/s7nodaveApp/src/Makefile s7nodave-3.0.2/s7nodaveApp/src/Makefile
+--- s7nodave-3.0.2/s7nodaveApp/src/Makefile	2021-04-12 17:42:03.000000000 +0800
++++ s7nodave-3.0.2/s7nodaveApp/src/Makefile	2021-09-18 17:28:15.309381738 +0800
+@@ -40,6 +40,33 @@
+ s7nodave_LIBS += snap7
+ s7nodave_LIBS += $(EPICS_BASE_IOC_LIBS)
+ 
++PROD_IOC = s7nodaveApp
++# s7nodaveApp.dbd will be created and installed
++DBD += s7nodaveApp.dbd
++
++# s7nodaveApp.dbd will be made up from these files:
++s7nodaveApp_DBD += base.dbd
++
++# Include dbd files from all support applications:
++s7nodaveApp_DBD += asyn.dbd
++s7nodaveApp_DBD += s7nodave.dbd
++
++# s7nodaveApp_registerRecordDeviceDriver.cpp will be created from s7nodaveApp.dbd
++s7nodaveApp_SRCS += s7nodaveApp_registerRecordDeviceDriver.cpp
++s7nodaveApp_SRCS_DEFAULT += s7nodaveMain.c
++
++#ifdef AUTOSAVE
++s7nodaveApp_DBD += asSupport.dbd
++s7nodaveApp_LIBS += autosave
++#endif
++#ifdef DEVIOCSTATS
++s7nodaveApp_DBD += devIocStats.dbd
++s7nodaveApp_LIBS += devIocStats
++#endif
++s7nodaveApp_LIBS += asyn
++s7nodaveApp_LIBS += s7nodave
++s7nodaveApp_LIBS += $(EPICS_BASE_IOC_LIBS)
++
+ #===========================
+ 
+ include $(TOP)/configure/RULES

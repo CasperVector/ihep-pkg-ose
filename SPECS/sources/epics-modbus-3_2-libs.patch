@@ -1,0 +1,40 @@
+diff -ur modbus-R3-2/configure/RELEASE modbus-R3-2/configure/RELEASE
+--- modbus-R3-2/configure/RELEASE	2021-07-21 17:06:34.000000000 +0800
++++ modbus-R3-2/configure/RELEASE	2021-07-22 01:35:42.169678657 +0800
+@@ -13,6 +13,8 @@
+ SUPPORT=/opt/epics
+ 
+ ASYN=$(SUPPORT)/asyn
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ 
+ # If you don't want to install into $(TOP) then
+ # define INSTALL_LOCATION_APP here
+diff -ur modbus-R3-2/modbusApp/src/Makefile modbus-R3-2/modbusApp/src/Makefile
+--- modbus-R3-2/modbusApp/src/Makefile	2019-08-17 05:53:51.000000000 +0800
++++ modbus-R3-2/modbusApp/src/Makefile	2021-07-22 01:39:45.067662971 +0800
+@@ -40,6 +40,12 @@
+ PROD_IOC += testClient
+ testClient_SRCS += testClient.cpp
+ 
++#ifdef AUTOSAVE
++PROD_LIBS += autosave
++#endif
++#ifdef DEVIOCSTATS
++PROD_LIBS += devIocStats
++#endif
+ PROD_LIBS += modbus
+ PROD_LIBS += asyn
+ PROD_LIBS += $(EPICS_BASE_IOC_LIBS)
+diff -ur modbus-R3-2/modbusApp/src/modbusInclude.dbd modbus-R3-2/modbusApp/src/modbusInclude.dbd
+--- modbus-R3-2/modbusApp/src/modbusInclude.dbd	2019-08-17 05:53:51.000000000 +0800
++++ modbus-R3-2/modbusApp/src/modbusInclude.dbd	2021-09-03 21:25:20.182847648 +0800
+@@ -2,6 +2,8 @@
+ include "asyn.dbd"
+ include "drvAsynIPPort.dbd"
+ include "drvAsynSerialPort.dbd"
++include "asSupport.dbd"
++include "devIocStats.dbd"
+ include "modbusSupport.dbd"
+ registrar(testModbusSyncIORegister)
+ 

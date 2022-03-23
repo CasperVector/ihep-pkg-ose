@@ -1,0 +1,99 @@
+diff -Nur netDev-1.0.5/configure/RELEASE netDev-1.0.5/configure/RELEASE
+--- netDev-1.0.5/configure/RELEASE	2021-07-21 18:15:06.000000000 +0000
++++ netDev-1.0.5/configure/RELEASE	2021-07-21 18:57:47.000000000 +0000
+@@ -13,6 +13,7 @@
+ -include $(TOP)/../configure/SUPPORT.$(EPICS_HOST_ARCH)
+ 
+-#ASYN=$(SUPPORT)/asyn
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ 
+ EPICS_BASE=/opt/epics/base
+ -include $(TOP)/../configure/EPICS_BASE.$(EPICS_HOST_ARCH)
+diff -Nur netDev-1.0.5/iocBoot/iocNetDev/example.db netDev-1.0.5/iocBoot/iocNetDev/example.db
+--- netDev-1.0.5/iocBoot/iocNetDev/example.db	1970-01-01 08:00:00.000000000 +0800
++++ netDev-1.0.5/iocBoot/iocNetDev/example.db	2021-07-22 02:35:31.091446891 +0800
+@@ -0,0 +1,19 @@
++record(bi, "$(user):inputX1")
++{
++	field(DESC, "Digital input")
++	field(DTYP, "Yew Plc")
++	field(SCAN, ".1 second")
++	field(INP, "@192.168.1.110(0x3001)#X202")
++	field(ZNAM, "Zero")
++	field(ONAM, "One")
++}
++
++record(bo, "$(user):outputY1")
++{
++	field(DESC, "Digital output")
++	field(DTYP, "Yew Plc")
++	field(OUT, "@192.168.1.110(0x3001)#Y310")
++	field(ZNAM, "Zero")
++	field(ONAM, "One")
++}
++
+diff -Nur netDev-1.0.5/iocBoot/iocNetDev/st.cmd netDev-1.0.5/iocBoot/iocNetDev/st.cmd
+--- netDev-1.0.5/iocBoot/iocNetDev/st.cmd	1970-01-01 08:00:00.000000000 +0800
++++ netDev-1.0.5/iocBoot/iocNetDev/st.cmd	2021-07-22 02:35:31.091446891 +0800
+@@ -0,0 +1,13 @@
++#!../../bin/linux-x86_64/netDevApp
++
++< envPaths
++cd "${TOP}"
++
++## Register all support components
++dbLoadDatabase "dbd/netDevApp.dbd"
++netDevApp_registerRecordDeviceDriver pdbbase
++
++cd "${TOP}/iocBoot/${IOC}"
++dbLoadRecords("example.db", "user=xxx")
++iocInit
++
+diff -Nur netDev-1.0.5/src/arrayoutRecord.c netDev-1.0.5/src/arrayoutRecord.c
+--- netDev-1.0.5/src/arrayoutRecord.c	2019-02-12 16:45:15.000000000 +0800
++++ netDev-1.0.5/src/arrayoutRecord.c	2021-07-22 02:35:31.091446891 +0800
+@@ -15,7 +15,7 @@
+ #include <epicsVersion.h>
+ #endif
+ 
+-#if EPICS_REVISION < 14
++#if EPICS_VERSION == 3 && EPICS_REVISION < 14
+ #  include <vxWorks.h>
+ #  include <types.h>
+ #  include <stdioLib.h>
+diff -Nur netDev-1.0.5/src/Makefile netDev-1.0.5/src/Makefile
+--- netDev-1.0.5/src/Makefile	2019-02-12 16:45:15.000000000 +0800
++++ netDev-1.0.5/src/Makefile	2021-07-22 02:38:08.002436758 +0800
+@@ -40,6 +40,31 @@
+ netDev_SRCS += devMW100.c
+ netDev_SRCS += devKeyPlc.c
+ 
++PROD_IOC = netDevApp
++# netDevApp.dbd will be created and installed
++DBD += netDevApp.dbd
++
++# netDevApp.dbd will be made up from these files:
++netDevApp_DBD += base.dbd
++
++# Include dbd files from all support applications:
++netDevApp_DBD += netDev.dbd
++
++# netDevApp_registerRecordDeviceDriver.cpp will be created from netDevApp.dbd
++netDevApp_SRCS += netDevApp_registerRecordDeviceDriver.cpp
++netDevApp_SRCS_DEFAULT += netDevMain.c
++
++#ifdef AUTOSAVE
++netDevApp_DBD += asSupport.dbd
++netDevApp_LIBS += autosave
++#endif
++#ifdef DEVIOCSTATS
++netDevApp_DBD += devIocStats.dbd
++netDevApp_LIBS += devIocStats
++#endif
++netDevApp_LIBS += netDev
++netDevApp_LIBS += $(EPICS_BASE_IOC_LIBS)
++
+ #===========================
+ 
+ include $(TOP)/configure/RULES
