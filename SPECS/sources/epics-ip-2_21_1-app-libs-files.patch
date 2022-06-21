@@ -1,10 +1,11 @@
 diff -Nur ip-R2-21-1/configure/RELEASE ip-R2-21-1/configure/RELEASE
 --- ip-R2-21-1/configure/RELEASE	2021-07-22 01:17:43.541748313 +0800
 +++ ip-R2-21-1/configure/RELEASE	2021-07-22 01:26:48.203713139 +0800
-@@ -15,6 +15,8 @@
+@@ -15,6 +15,9 @@
  ASYN=$(SUPPORT)/asyn
  IPAC=$(SUPPORT)/ipac
  SNCSEQ=$(SUPPORT)/seq
++CALC=$(SUPPORT)/calc
 +AUTOSAVE=$(SUPPORT)/autosave
 +DEVIOCSTATS=$(SUPPORT)/iocStats
  
@@ -42,17 +43,18 @@ diff -Nur ip-R2-21-1/iocs/ipExample/iocBoot/iock65xx/st.cmd ip-R2-21-1/iocs/ipEx
 diff -Nur ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd
 --- ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd	2019-08-17 05:53:25.000000000 +0800
 +++ ip-R2-21-1/iocs/ipExample/ipExampleApp/src/ipExampleInclude.dbd	2021-09-03 22:44:39.933540273 +0800
-@@ -4,4 +4,6 @@
+@@ -4,4 +4,7 @@
  include "drvAsynIPPort.dbd"
  include "devEpics.dbd"
  include "devGpib.dbd"
++include "calcSupport.dbd"
 +include "asSupport.dbd"
 +include "devIocStats.dbd"
  include "ipSupport.dbd"
 diff -Nur ip-R2-21-1/ipApp/src/Makefile ip-R2-21-1/ipApp/src/Makefile
 --- ip-R2-21-1/ipApp/src/Makefile	2019-08-17 05:53:29.000000000 +0800
 +++ ip-R2-21-1/ipApp/src/Makefile	2020-09-25 00:33:14.035661052 +0800
-@@ -37,6 +37,24 @@
+@@ -37,6 +37,27 @@
  ip_LIBS += seq pv
  ip_LIBS += $(EPICS_BASE_IOC_LIBS)
  
@@ -64,6 +66,9 @@ diff -Nur ip-R2-21-1/ipApp/src/Makefile ip-R2-21-1/ipApp/src/Makefile
 +ipApp_SRCS += ipApp_registerRecordDeviceDriver.cpp
 +ipApp_SRCS_DEFAULT += ipMain.cpp
 +
++#ifdef CALC
++ipApp_LIBS += calc
++#endif
 +#ifdef AUTOSAVE
 +ipApp_LIBS += autosave
 +#endif

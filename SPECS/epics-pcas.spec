@@ -1,15 +1,10 @@
 %define repo pcas
 %define __arch_install_post true
+%{meta name license=EPICS version=4.13.3,2}
 
-Name:           epics-%{repo}
-Version:        4.13.3
-Release:        2
 Summary:        EPICS - Portable Channel Access Server
-
-License:        EPICS Open License
 URL:            https://github.com/epics-modules/%{repo}
 Source0:        %{github_archive_ver epics-modules %{repo} %{version} v}
-
 BuildRequires:  epics-base, gcc-c++, make, perl
 Requires:       epics-base
 

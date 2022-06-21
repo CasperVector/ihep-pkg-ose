@@ -2,18 +2,13 @@
 %define commit R1-10
 %define acommit R3-11
 %include %{_specdir}/classes/unbloat.spec
+%{meta name license=MIT github=areaDetector}
 
-Name:           epics-%{repo}
-Version:        %(echo %{commit} | sed 's/^R//; s/-/_/g').%(echo %{acommit} | sed 's/^R//; s/-/_/g')
+Version:        %(echo %{commit}.%{acommit} | sed 's/\<R//g; s/-/_/g')
 Release:        1
 Summary:        EPICS - Support libraries for areaDetector
-
-License:        MIT
-URL:            https://github.com/areaDetector/%{repo}
-Source0:        %{github_archive areaDetector %{repo} %{commit}}
 Source1:        %{github_archive areaDetector areaDetector %{acommit}}
 Patch0:         %{name}-1_10-config.patch
-
 BuildRequires:  epics-support, gcc-c++, make, libXext-devel
 Requires:       epics-support, libXext
 

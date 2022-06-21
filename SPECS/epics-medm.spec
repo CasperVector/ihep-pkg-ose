@@ -1,9 +1,7 @@
-Name:           epics-medm
-Version:        3_1_17
-Release:        1
-Summary:        EPICS - Motif Editor and Display Manager
+%{meta license=EPICS version=3_1_17,1}
 
-License:        EPICS Open License
+Name:           epics-medm
+Summary:        EPICS - Motif Editor and Display Manager
 URL:            https://epics.anl.gov/extensions/medm/index.php
 Source0:        https://epics.anl.gov/download/extensions/extensionsTop_20120904.tar.gz
 Source1:        %{github_archive epics-extensions medm MEDM%{version}}

@@ -1,16 +1,11 @@
 %define repo Galil
 %define repotail 3-0
 %define commit 3-6
+%{meta name license=EPICS version=commit,1}
 
-Name:           epics-%{repo}
-Version:        %(echo %{commit} | sed 's/^R//; s/-/_/g')
-Release:        1
 Summary:        EPICS - Driver for Galil products based on asyn
-
-License:        EPICS Open License
 URL:            https://github.com/motorapp/%{repo}-%{repotail}
 Source0:        %{github_archive_ver motorapp %{repo}-%{repotail} %{commit} V}
-
 BuildRequires:  epics-asyn, epics-autosave, epics-busy, epics-calc, epics-ipac
 BuildRequires:  epics-motor, epics-seq, epics-sscan, gcc-c++, make
 Requires:       epics-asyn, epics-autosave, epics-busy, epics-calc, epics-ipac

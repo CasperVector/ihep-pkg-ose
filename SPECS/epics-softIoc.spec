@@ -1,13 +1,10 @@
-Name:           epics-softIoc
-Version:        7.0.6.1
-Release:        1
-Summary:        EPICS - softIoc extended with useful supports
+%{meta license=EPICS version=7.0.6.1,1}
 
-License:        EPICS Open License
+Name:           epics-softIoc
+Summary:        EPICS - softIoc extended with useful supports
 URL:            https://epics.anl.gov/
 Source0:        https://epics.anl.gov/download/base/base-%{version}.tar.gz
 Patch0:         %{name}-7.0.6.1-app-libs.patch
-
 BuildRequires:  epics-iocStats, gcc-c++, make, perl
 Requires:       epics-iocStats
 

@@ -3,19 +3,12 @@
 %define xcommit R6-2-1
 %define icommit R2-21-1
 %include %{_specdir}/classes/unbloat.spec
+%{meta name license=EPICS github=EPICS-synApps version=commit,1}
 
-Name:           epics-%{repo}
-Version:        %(echo %{commit} | sed 's/^R//; s/-/_/g')
-Release:        1
 Summary:        EPICS - synApps support files
-
-License:        EPICS Open License
-URL:            https://github.com/EPICS-synApps/%{repo}
-Source0:        %{github_archive EPICS-synApps %{repo} %{commit}}
 Source1:        %{github_archive epics-modules xxx %{xcommit}}
 Source2:        %{github_archive epics-modules ip %{icommit}}
 Source3:        %{name}-6_2_1.release
-
 BuildRequires:  epics-base, make
 Requires:       epics-base
 

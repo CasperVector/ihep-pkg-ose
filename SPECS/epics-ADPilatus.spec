@@ -1,18 +1,10 @@
 %define repo ADPilatus
-%define commit R2-9
+%define commit 35d95b63
+%{meta name license=EPICS github=areaDetector version=2_9,8.commit}
 
-Name:           epics-%{repo}
-Version:        %(echo %{commit} | sed 's/^R//; s/-/_/g')
-Release:        7
 Summary:        EPICS - Dectris Pilatus pixel-array detectors
 
-License:        EPICS Open License
-URL:            https://github.com/areaDetector/%{repo}
-Source0:        %{github_archive areaDetector %{repo} %{commit}}
-
-BuildRequires:  epics-ADCore, gcc-c++, make, libXext-devel
-Requires:       epics-ADCore, libXext
-
+%{inherit ad + deps}
 %description
 
 %{inherit ad}

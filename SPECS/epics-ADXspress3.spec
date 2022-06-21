@@ -1,18 +1,12 @@
 %define repo ADXspress3
 %define commit 20220318
+%{meta name license=LGPLv3+ version=2_6,3.commit}
 
-Name:           epics-%{repo}
-Version:        2_6
-Release:        3.%{commit}
 Summary:        EPICS - Xspress3 readout devices from Quantum Detectors
-
-License:        LGPLv2+
 URL:            https://github.com/CasperVector/%{repo}
 Source0:        %{github_archive_ver CasperVector %{repo} %{commit} v}
 
-BuildRequires:  epics-ADCore, gcc-c++, make, libXext-devel
-Requires:       epics-ADCore, libXext
-
+%{inherit ad + deps}
 %description
 
 %{inherit ad - prep}

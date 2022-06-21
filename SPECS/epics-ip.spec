@@ -1,20 +1,13 @@
 %define repo ip
 %define commit R2-21-1
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
-Name:           epics-%{repo}
-Version:        %(echo %{commit} | sed 's/^R//; s/-/_/g')
-Release:        1
 Summary:        EPICS - Misc devices dating back to Industry Pack cards
-
-License:        EPICS Open License
-URL:            https://github.com/epics-modules/%{repo}
-Source0:        %{github_archive epics-modules %{repo} %{commit}}
 Patch0:         %{name}-2_21_1-app-libs-files.patch
-
-BuildRequires:  epics-asyn, epics-autosave, epics-iocStats
-BuildRequires:  epics-ipac, epics-seq, gcc-c++, make
-Requires:       epics-asyn, epics-autosave, epics-iocStats
-Requires:       epics-ipac, epics-seq
+BuildRequires:  epics-asyn, epics-autosave, epics-calc
+BuildRequires:  epics-iocStats, epics-ipac, epics-seq, gcc-c++, make
+Requires:       epics-asyn, epics-autosave, epics-calc
+Requires:       epics-iocStats, epics-ipac, epics-seq
 
 %description
 

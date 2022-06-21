@@ -1,13 +1,11 @@
 diff -ur StreamDevice-2.8.16/configure/RELEASE StreamDevice-2.8.16/configure/RELEASE
 --- StreamDevice-2.8.16/configure/RELEASE	2020-08-18 20:46:16.000000000 +0800
 +++ StreamDevice-2.8.16/configure/RELEASE	2022-02-14 17:50:50.839964265 +0800
-@@ -18,8 +18,10 @@
- -include $(TOP)/../configure/SUPPORT.$(EPICS_HOST_ARCH)
+@@ -19,7 +19,9 @@
  
  ASYN=$(SUPPORT)/asyn
--CALC=$(SUPPORT)/calc
+ CALC=$(SUPPORT)/calc
 -PCRE=$(SUPPORT)/pcre-7-2
-+#CALC=$(SUPPORT)/calc
 +#PCRE=$(SUPPORT)/pcre
 +AUTOSAVE=$(SUPPORT)/autosave
 +DEVIOCSTATS=$(SUPPORT)/iocStats

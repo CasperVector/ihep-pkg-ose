@@ -29,6 +29,10 @@ yyum() {
 	sudo yum install -y "$@"
 }
 
+spec_expand() {
+	rpmspec --define "_topdir $PWD" -P "$1" > /tmp/expanded.spec
+}
+
 repo_mk() {
 	rm -rf "$rpm_root"/repodata; createrepo "$rpm_root"
 	sudo yum clean --disablerepo='*' --enablerepo=ihep expire-cache
@@ -73,16 +77,18 @@ iso_get() {
 src_get() {
 	local f; yyum wget rpmdevtools; rm_bad misc/SHA512SUMS
 	if [ "$#" -gt 0 ]; then
-		for f in "$@"; do spectool SPECS/"$f".spec; done |
-			awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
+		for f in "$@"; do
+			spec_expand SPECS/"$f".spec; spectool /tmp/expanded.spec
+		done | awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
 		./misc/fetch.sh /tmp/fetch.txt
 		return; fi
 	wget -nc -P SOURCES "$mirror_docker"/docker-ce.repo \
 		"$mirror_qd"/qd.repo "$mirror_qd/$pubkey_qd"
 	[ -f SOURCES/"$pubkey_docker" ] ||
 		wget -O SOURCES/"$pubkey_docker" "$mirror_docker"/gpg
-	for f in SPECS/*.spec; do spectool "$f"; done |
-		awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
+	for f in SPECS/*.spec; do
+		spec_expand "$f"; spectool /tmp/expanded.spec
+	done | awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
 	./misc/fetch.sh /tmp/fetch.txt
 	(cd SOURCES; sha512sum -c) < misc/SHA512SUMS
 }
@@ -119,8 +125,8 @@ rpm_prune() {
 
 build() {
 	while [ "$#" -ge 1 ]; do
-		sudo yum-builddep -y --enablerepo=ihep \
-			--define "_topdir $PWD" SPECS/"$1".spec
+		spec_expand SPECS/"$1".spec
+		sudo yum-builddep -y --enablerepo=ihep /tmp/expanded.spec
 		(set +x; . /etc/profile; set -x;
 		rpmbuild -bb --clean --define "_topdir $PWD" SPECS/"$1".spec)
 	shift; done; repo_mk
