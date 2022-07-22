@@ -1,0 +1,13 @@
+%__os_install_post \
+    %{?__brp_ldconfig} \
+    %{?__brp_compress} \
+    %{!?__debug_package:\
+    %{?__brp_strip} \
+    %{?__brp_strip_comment_note} \
+    } \
+    %{?__brp_strip_static_archive} \
+    %{?_python_compile:%{?__brp_python_bytecompile}} \
+    %{?__brp_python_hardlink} \
+    %{?_python_shebang:%{?__brp_mangle_shebangs}} \
+%{nil}
+

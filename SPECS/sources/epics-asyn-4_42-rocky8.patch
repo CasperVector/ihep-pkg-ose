@@ -1,0 +1,12 @@
+diff -ur asyn-R4-42-orig/configure/CONFIG_SITE asyn-R4-42/configure/CONFIG_SITE
+--- asyn-R4-42-orig/configure/CONFIG_SITE	2021-05-10 23:56:28.000000000 +0800
++++ asyn-R4-42/configure/CONFIG_SITE	2022-07-21 17:52:27.297585133 +0800
+@@ -56,7 +56,7 @@
+ 
+ # Some linux systems moved RPC related symbols to libtirpc
+ # To enable linking against this library, uncomment the following line
+-# TIRPC=YES
++TIRPC=YES
+ 
+ -include $(SUPPORT)/configure/CONFIG_SITE
+ 

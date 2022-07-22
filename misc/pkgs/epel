@@ -1,0 +1,3 @@
+kernel-rt kernel-rt-devel docker-ce
+re2c hidapi-devel procServ
+

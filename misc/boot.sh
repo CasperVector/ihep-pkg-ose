@@ -1,20 +1,35 @@
 #!/bin/sh -e
 
-pkgs_pre=''
-pkgs_epics="$(xargs < misc/epics-boot.txt | tr ' ' '\n' | sed 's/^/epics-/')"
-pkgs_post='npreal2'
+ver="$(rpmspec -E '%{rhel}')"
+
+vcat() {
+	cd "$1"; cat "$2" "$2.$ver"
+}
+
+# Hacky, but `--recursive' seems to `--resolve' only once at least on CentOS 7.
+
+if [ "$ver" -eq 7 ]; then
+py3rel=6
+tree_requires() { repoquery --tree-requires "$@"; }
+else
+py3rel=9
+tree_requires() { repoquery --tree --requires --latest-limit=1 "$@"; }
+fi
+
+pkgs_pre="$(vcat misc/pkgs pre)"
+pkgs_epics="$(vcat misc/pkgs epics | xargs |
+	tr ' ' '\n' | sed 's/^/epics-/' | xargs)"
+pkgs_post="$(vcat misc/pkgs post)"
 pkgs_boot="$pkgs_pre $pkgs_epics $pkgs_post"
-pkgs_epel='kernel-rt kernel-rt-devel docker-ce re2c hidapi-devel'
-pkgs_epel="$pkgs_epel xspress3-autocalib procServ"
-pkgs_pypi='bluesky ophyd databroker pyepics h5py hdf5plugin ipython matplotlib'
-pkgs_pypi="$pkgs_pypi PyQt5 pyqtgraph pyzmq suitcase-csv suitcase-json_metadata"
+pkgs_epel="$(vcat misc/pkgs epel)"
 pkgs_pip='pip setuptools setuptools-scm wheel build'
-pkgs_pyfetch=''
-pkgs_nobinary='ipython suitcase-utils'
+pkgs_pypi="$(vcat misc/pkgs pypi)"
+pkgs_pyfetch="$(vcat misc/pkgs pyfetch)"
+pkgs_nobinary="$(vcat misc/pkgs nobinary)"
 pipdl_args="--no-binary $(echo "$pkgs_nobinary" | tr ' ' ',')"
 
-mirror='https://mirrors.dotsrc.org'
-pubkey_epel='RPM-GPG-KEY-EPEL-7'
+mirror='https://mirrors.bangmod.cloud'
+pubkey_epel="RPM-GPG-KEY-EPEL-$ver"
 mirror_docker='https://download.docker.com/linux/centos'
 pubkey_docker='RPM-GPG-KEY-Docker'
 mirror_qd='https://quantumdetectors.com/rpm/el7'
@@ -38,77 +53,99 @@ repo_mk() {
 	sudo yum clean --disablerepo='*' --enablerepo=ihep expire-cache
 }
 
-# Hacky, but `--recursive' seems to `--resolve' only once.
-
 pkg_url() {
-	repoquery --tree-requires --qf='%{name}@%{repoid}' "$@" |
-		sed 's/ *\[.*//; s/.* //; s/@/ /' | awk '$2 != "base" { print $1 }' |
-		sort -u | xargs repoquery --location
+	tree_requires --qf='%{name}@%{repoid}' "$@" |
+		sed 's/ *\[.*//; s/.* //; s/@/ /' |
+		awk '$2 != "base" && $2 != "baseos" && $2 != "appstream" { print $1 }' |
+		sort -u | xargs repoquery --latest-limit=1 --location
 }
 
 pkg_link() {
-	repoquery --enablerepo=ihep --tree-requires \
-		--qf='%{nvra}.rpm@%{repoid}' "$@" |
+	tree_requires --enablerepo=ihep \
+		--qf='%{name}-%{version}-%{release}.%{arch}.rpm@%{repoid}' "$@" |
 		sed 's/ *\[.*//; s/.* //; s/@/ /' | awk '$2 == "ihep" { print $1 }' |
 		sort -u | (mkdir "$rpm_root"/link; cd "$rpm_root"; xargs -r ln -t link)
 }
 
+chk_bad() {
+	vcat misc/SHA512SUMS "$2" | (cd "$1"; sha512sum -c)
+}
+
 rm_bad() {
-	cat "$@" | (cd SOURCES;
+	vcat misc/SHA512SUMS "$2" | (cd "$1";
 		sha512sum -c 2> /dev/null | grep FAILED | xargs rm -vf)
 }
 
 src_prune() {
 	(cd SOURCES; mkdir .keep; find . -type l -exec mv -t .keep '{}' '+';
-	(cd ../misc; awk '{ print $2 }' SHA512SUMS \
-		SHA512SUMS-pyfetch SHA512SUMS-iso) | xargs mv -t .keep || true;
+	(cd ../misc/SHA512SUMS; cat main* pyfetch* iso*) |
+		awk '{ print $2 }' | xargs mv -t .keep || true;
 	ls | xargs rm -vf; cd .keep; ls | xargs mv -t ..; cd -; rmdir .keep)
 }
 
-# `wget -c' on CentOS 7 works badly with GitHub/GitLab/Gitea archives.
+# `wget -c' works badly with GitHub/GitLab/Gitea archives.
 
 iso_get() {
-	yyum wget; rm_bad misc/SHA512SUMS-iso
+	yyum wget; rm_bad SOURCES iso
+if [ "$ver" -eq 7 ]; then
 	wget -nc -P SOURCES \
 		"$mirror"/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-Everything-2009.iso
-	(cd SOURCES; sha512sum -c) < misc/SHA512SUMS-iso
+else
+	wget -nc -P SOURCES \
+		"$mirror"/rocky-linux/8.5/isos/x86_64/Rocky-8.5-x86_64-dvd1.iso
+fi
+	chk_bad SOURCES iso
 }
 
 src_get() {
-	local f; yyum wget rpmdevtools; rm_bad misc/SHA512SUMS
+	local f; yyum wget rpmdevtools; rm_bad SOURCES main
 	if [ "$#" -gt 0 ]; then
 		for f in "$@"; do
 			spec_expand SPECS/"$f".spec; spectool /tmp/expanded.spec
 		done | awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
 		./misc/fetch.sh /tmp/fetch.txt
 		return; fi
+if [ "$ver" -eq 7 ]; then
 	wget -nc -P SOURCES "$mirror_docker"/docker-ce.repo \
 		"$mirror_qd"/qd.repo "$mirror_qd/$pubkey_qd"
+fi
 	[ -f SOURCES/"$pubkey_docker" ] ||
 		wget -O SOURCES/"$pubkey_docker" "$mirror_docker"/gpg
-	for f in SPECS/*.spec; do
-		spec_expand "$f"; spectool /tmp/expanded.spec
+	for f in $pkgs_boot; do
+		spec_expand SPECS/"$f".spec; spectool /tmp/expanded.spec
 	done | awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
-	./misc/fetch.sh /tmp/fetch.txt
-	(cd SOURCES; sha512sum -c) < misc/SHA512SUMS
+	./misc/fetch.sh /tmp/fetch.txt; chk_bad SOURCES main
 }
 
 epel_prep() {
-	inst misc/CentOS-rt.repo /etc/yum.repos.d
-	sudo sed -i -e "s@http://mirror\\.centos\\.org/centos/@$mirror/centos/@" \
-		-e "s@http://vault\\.centos\\.org/@$mirror/centos-vault/@" \
-		/etc/yum.repos.d/CentOS-*.repo
-	sudo sed -i -e '/^\[extras\]/,/^$/ s/^enabled=0/enabled=1/' \
-		/etc/yum.repos.d/CentOS-Base.repo
+if [ "$ver" -eq 7 ]; then
+	(cd /etc/yum.repos.d;
+	sudo sed -i '/^\[extras\]/,/^$/ s/^enabled=0/enabled=1/' CentOS-Base.repo;
+	sudo sed -i 's/^enabled=0/enabled=1/' CentOS-rt.repo)
+else
+	(cd /etc/yum.repos.d;
+	sudo sed -i 's/^enabled=0/enabled=1/' \
+		Rocky-Extras.repo Rocky-RT.repo Rocky-PowerTools.repo)
+fi
 	yyum wget epel-release
+	inst SOURCES/docker-ce.repo /etc/yum.repos.d
+	inst SOURCES/"$pubkey_docker" /etc/pki/rpm-gpg
+	(cd /etc/pki/rpm-gpg;
+		sudo rpm --import "$pubkey_epel" "$pubkey_docker")
+if [ "$ver" -eq 7 ]; then
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
 		-e "s@http://download\\.fedoraproject\\.org/pub/epel/@$mirror/epel/@" \
 		/etc/yum.repos.d/epel.repo
-	inst SOURCES/docker-ce.repo SOURCES/qd.repo /etc/yum.repos.d
-	inst SOURCES/"$pubkey_docker" SOURCES/"$pubkey_qd" /etc/pki/rpm-gpg
-	(cd /etc/pki/rpm-gpg;
-		sudo rpm --import "$pubkey_epel" "$pubkey_docker" "$pubkey_qd")
+	inst SOURCES/qd.repo /etc/yum.repos.d
+	inst SOURCES/"$pubkey_qd" /etc/pki/rpm-gpg
+	sudo rpm --import /etc/pki/rpm-gpg/"$pubkey_qd"
 	sudo yum repolist
+else
+	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
+		-e "s@https://download\.example/pub/epel/@$mirror/epel/@" \
+		/etc/yum.repos.d/epel.repo
+	sudo yum repolist -v
+fi
 }
 
 epel_get() {
@@ -118,8 +155,9 @@ epel_get() {
 }
 
 rpm_prune() {
-	rpmspec --define "_topdir $PWD" -q --qf='%{nvra}.rpm\n' SPECS/*.spec |
-	(cd "$rpm_root"; mkdir .keep; xargs mv -t .keep || true
+	echo $pkgs_boot | tr ' ' '\n' | sed 's@^@SPECS/@; s/$/.spec/' |
+	xargs rpmspec --define "_topdir $PWD" -q --qf='%{nvra}.rpm\n' |
+	(cd "$rpm_root"; mkdir .keep; xargs mv -t .keep || true;
 	rm -f *.rpm; mv .keep/* .; rmdir .keep); repo_mk
 }
 
@@ -134,7 +172,8 @@ build() {
 
 pypi_prune() {
 	(cd pypi; mv orig/* . || true; rm -rf orig simple; mkdir .keep;
-	awk '{ print $2 }' < ../misc/SHA512SUMS-pypi | xargs mv -t .keep || true;
+	vcat ../misc/SHA512SUMS pypi |
+		awk '{ print $2 }' | xargs mv -t .keep || true;
 	ls | xargs rm -vf; cd .keep; ls | xargs mv -t ..; cd -; rmdir .keep)
 }
 
@@ -145,23 +184,20 @@ pypi_get() {
 			done | grep '://' | sort -u > /tmp/fetch.txt
 		./misc/fetch.sh /tmp/fetch.txt
 		return; fi
-	yyum python3-pip; sudo pip3 install -U pip
+	sudo pip3 install -U pip
+	#(cd pypi; pip3 download $pipdl_args $pkgs_pypi $pkgs_pip)
 	for f in $pkgs_pyfetch; do ./misc/pybuild.sh "$f" 'echo $src' 2> /dev/null;
 		done | grep '://' | sort -u > /tmp/fetch.txt
-	./misc/fetch.sh /tmp/fetch.txt
-	(cd SOURCES; sha512sum -c) < misc/SHA512SUMS-pyfetch
-	#(cd pypi; pip3 download $pipdl_args $pkgs_pypi $pkgs_pip)
-	awk '{ print $2 }' < misc/SHA512SUMS-pypi |
+	./misc/fetch.sh /tmp/fetch.txt; chk_bad SOURCES pyfetch
+	vcat misc/SHA512SUMS pypi | awk '{ print $2 }' |
 		sed -r 's/-([0-9][^-]+).*/==\1/; s/(\.zip|\.tar.[^.]+)$//' |
 		(cd pypi; xargs pip3 download --no-deps $pipdl_args)
-	(cd pypi; sha512sum -c) < misc/SHA512SUMS-pypi
-	./misc/dir2pi.py pypi
+	chk_bad pypi pypi; ./misc/dir2pi.py pypi
 }
 
 pypi_prep() {
-	yyum python3-pip
-	inst misc/pip.conf /etc
-	(cd /usr/lib64/python3.*/distutils;
+	inst misc/docker/pip.conf /etc
+	(cd /usr/lib64/python3."$py3rel"/distutils;
 		sudo ln -s /etc/pip.conf distutils.cfg)
 	sudo pip3 install ./pypi/pip-[0-9]*.whl
 	sudo pip3 install -U setuptools

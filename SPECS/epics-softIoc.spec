@@ -27,7 +27,7 @@ make %{?_smp_mflags} %{cmd_flags}
 . %{_specdir}/fn-build.sh
 mkdir -p %{buildroot}%{etop_base}; cd softIoc
 cp -r dbd bin %{buildroot}%{etop_base}; cd -
-%_do_rm_patch; %_file_list %{epics_root} > epics.lst
+%_rm_extras; %_file_list %{epics_root} > epics.lst
 
 %files -f epics.lst
 

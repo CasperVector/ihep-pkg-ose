@@ -18,7 +18,7 @@ def github(proj):
 def version(ver, rel):
 	ret = "Version: %s\n" % ("%(echo %{commit} | sed 's/^R//; s/-/_/g')\n"
 		if ver == "commit" else ver)
-	ret += "Release: %s\n" % re.sub(r"\.(commit)$", r".%{\1}", rel)
+	ret += "Release: %s.el%%{rhel}\n" % re.sub(r"\.(commit)$", r".%{\1}", rel)
 	return ret
 
 try:

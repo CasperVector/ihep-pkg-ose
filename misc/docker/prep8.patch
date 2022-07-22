@@ -1,0 +1,11 @@
+diff -Nur / /
+--- usr/lib/rpm/brp-strip-static-archive	2021-11-09 14:33:49.000000000 +0000
++++ usr/lib/rpm/brp-strip-static-archive	2022-07-21 08:48:18.823069519 +0000
+@@ -13,6 +13,6 @@
+ esac
+ 
+ # Strip static libraries.
+-find "$RPM_BUILD_ROOT" -type f | \
++find "$RPM_BUILD_ROOT" -type f -name '*.a' | \
+     grep -v "^${RPM_BUILD_ROOT}/\?usr/lib/debug" | \
+     xargs -d '\n' -r -P$NCPUS -n32 sh -c "file \"\$@\" | sed 's/:  */: /' | grep 'current ar archive' | sed -n -e 's/^\(.*\):[  ]*current ar archive/\1/p' | xargs -d '\n' -I\{\} $STRIP -g \{\}" ARG0

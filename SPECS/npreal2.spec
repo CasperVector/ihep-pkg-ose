@@ -1,6 +1,6 @@
 Name:           npreal2
 Version:        10.1
-Release:        2
+Release:        2.el%{rhel}
 Summary:        Moxa Linux Real TTY Driver
 
 License:        GPLv2
@@ -19,7 +19,7 @@ Requires(pre):  shadow-utils
 
 %build
 make %{?_smp_mflags} KERNEL="$(ls -d /usr/src/kernels/* | sed 1q)" \
-	CFLAGS="%{optflags} -Wno-strict-aliasing -Wno-unused-result"
+	CFLAGS="%{optflags} -Wno-strict-aliasing -Wno-unused-result -Wno-error=format-security"
 
 %install
 make DESTDIR=%{buildroot} install

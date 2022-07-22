@@ -5,7 +5,7 @@
 %{meta name license=MIT github=areaDetector}
 
 Version:        %(echo %{commit}.%{acommit} | sed 's/\<R//g; s/-/_/g')
-Release:        1
+Release:        2.el%{rhel}
 Summary:        EPICS - Support libraries for areaDetector
 Source1:        %{github_archive areaDetector areaDetector %{acommit}}
 Patch0:         %{name}-1_10-config.patch
@@ -37,7 +37,7 @@ make %{?_smp_mflags} %{cmd_flags}
 %install
 . %{_specdir}/fn-build.sh; %_link_ops %{etop_ad}
 _mv_dest %{etop_ad} %{buildroot}%{epics_root}
-%_file_list %{etop_ad} > epics.lst
+%_rm_extras; %_file_list %{etop_ad} > epics.lst
 
 %files -f epics.lst
 

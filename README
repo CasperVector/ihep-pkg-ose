@@ -1,7 +1,9 @@
 Quick start (assuming a Docker service is already running):
 
-$ ./misc/dboot.sh base
-$ ./misc/dboot.sh base 'src_get; epel_get'
-$ ./misc/dboot.sh base 'for name in $pkgs_boot; do build $name; done'
-$ ./misc/dboot.sh epics
+$ ./misc/dboot8.sh base
+$ ./misc/dboot8.sh base 'src_get; epel_get'
+$ ./misc/dboot8.sh base 'for name in $pkgs_boot; do build $name; done'
+$ ./misc/dboot8.sh epics
+
+For CentOS 7 instead of Rocky Linux 8, replace `dboot8' with `dboot7'.
 
