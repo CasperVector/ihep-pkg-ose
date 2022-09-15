@@ -1,6 +1,6 @@
 %define repo allenBradley
 %define commit 2.3
-%{meta name license=EPICS version=commit,1}
+%{meta name license=EPICS version=commit,2}
 
 Summary:        EPICS - Allen Bradley driver and device support
 URL:            https://epics.anl.gov/modules/bus/%{repo}/

@@ -10,10 +10,12 @@ vcat() {
 
 if [ "$ver" -eq 7 ]; then
 py3rel=6
-tree_requires() { repoquery --tree-requires "$@"; }
+repoqlimit=''
+repoqtree='--tree-requires'
 else
 py3rel=9
-tree_requires() { repoquery --tree --requires --latest-limit=1 "$@"; }
+repoqlimit='--latest-limit=1'
+repoqtree='--tree --requires'
 fi
 
 pkgs_pre="$(vcat misc/pkgs pre)"
@@ -54,14 +56,14 @@ repo_mk() {
 }
 
 pkg_url() {
-	tree_requires --qf='%{name}@%{repoid}' "$@" |
+	repoquery $repoqlimit $repoqtree --qf='%{name}@%{repoid}' "$@" |
 		sed 's/ *\[.*//; s/.* //; s/@/ /' |
 		awk '$2 != "base" && $2 != "baseos" && $2 != "appstream" { print $1 }' |
-		sort -u | xargs repoquery --latest-limit=1 --location
+		sort -u | xargs -r repoquery $repoqlimit --location
 }
 
 pkg_link() {
-	tree_requires --enablerepo=ihep \
+	repoquery $repoqlimit $repoqtree --enablerepo=ihep \
 		--qf='%{name}-%{version}-%{release}.%{arch}.rpm@%{repoid}' "$@" |
 		sed 's/ *\[.*//; s/.* //; s/@/ /' | awk '$2 == "ihep" { print $1 }' |
 		sort -u | (mkdir "$rpm_root"/link; cd "$rpm_root"; xargs -r ln -t link)
@@ -118,16 +120,14 @@ fi
 }
 
 epel_prep() {
+	(cd /etc/yum.repos.d;
 if [ "$ver" -eq 7 ]; then
-	(cd /etc/yum.repos.d;
-	sudo sed -i '/^\[extras\]/,/^$/ s/^enabled=0/enabled=1/' CentOS-Base.repo;
-	sudo sed -i 's/^enabled=0/enabled=1/' CentOS-rt.repo)
+	sudo sed -i 's/^enabled=0/enabled=1/' CentOS-rt.repo
 else
-	(cd /etc/yum.repos.d;
-	sudo sed -i 's/^enabled=0/enabled=1/' \
-		Rocky-Extras.repo Rocky-RT.repo Rocky-PowerTools.repo)
+	sudo sed -i 's/^enabled=0/enabled=1/' Rocky-RT.repo Rocky-PowerTools.repo
 fi
-	yyum wget epel-release
+	)
+	yyum --enablerepo=extras wget epel-release
 	inst SOURCES/docker-ce.repo /etc/yum.repos.d
 	inst SOURCES/"$pubkey_docker" /etc/pki/rpm-gpg
 	(cd /etc/pki/rpm-gpg;
@@ -149,6 +149,10 @@ fi
 }
 
 epel_get() {
+	if [ "$#" -gt 0 ]; then
+		pkg_url "$@" | xargs wget -nc -P "$rpm_root"/epel
+		rpm -K "$rpm_root"/epel/*; repo_mk
+		return; fi
 	epel_prep; rm -rf "$rpm_root"/epel; mkdir -p "$rpm_root"/epel
 	pkg_url $pkgs_epel | xargs wget -nc -P "$rpm_root"/epel
 	rpm -K "$rpm_root"/epel/*; repo_mk

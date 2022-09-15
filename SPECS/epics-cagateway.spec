@@ -1,5 +1,5 @@
 %define repo ca-gateway
-%{meta license=EPICS version=2.1.3,2}
+%{meta license=EPICS version=2.1.3,3}
 
 Name:           epics-cagateway
 Summary:        EPICS - Channel Access PV Gateway

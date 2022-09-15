@@ -1,6 +1,6 @@
 %define repo netDev
 %define commit 1.1.0
-%{meta name license=EPICS version=commit,2}
+%{meta name license=EPICS version=commit,3}
 
 Summary:        EPICS - Device and Driver Support for General Network Devices
 URL:            https://www-linac.kek.jp/cont/epics/netdev/

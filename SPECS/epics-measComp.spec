@@ -1,6 +1,6 @@
 %define repo measComp
 %define commit R3-0
-%{meta name license=EPICS github=epics-modules version=commit,1}
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
 Summary:        EPICS - USB and ethernet I/O modules from Measurement Computing
 BuildRequires:  epics-asyn, epics-autosave, epics-busy, epics-calc

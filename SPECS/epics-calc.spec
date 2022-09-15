@@ -1,6 +1,6 @@
 %define repo calc
 %define commit R3-7-4
-%{meta name license=EPICS github=epics-modules version=commit,1}
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
 Summary:        EPICS - [as]Calcout and transform records
 Patch0:         %{name}-3_7_4-config.patch

@@ -1,6 +1,6 @@
 %define repo motor
 %define commit R7-2-2
-%{meta name license=EPICS github=epics-modules version=commit,1}
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
 Summary:        EPICS - Core motor support
 Patch0:         %{name}-7_2_2-config-libs.patch

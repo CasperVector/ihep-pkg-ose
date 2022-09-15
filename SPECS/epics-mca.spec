@@ -1,8 +1,8 @@
 %define repo mca
 %define commit R7-9
-%define cmd_flags CMD_FLAGS='%{optflags} -Wno-error=format-security' \
+%define cmd_flags CMD_CFLAGS='%{optflags} -Wno-error=format-security' \\\
 	CMD_CXXFLAGS='%{optflags} -Wno-error=format-security'
-%{meta name license=EPICS github=epics-modules version=commit,1}
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
 Summary:        EPICS - Multi-channel analysers and multi-channel scalers
 Patch0:         %{name}-7_9-scaler.patch

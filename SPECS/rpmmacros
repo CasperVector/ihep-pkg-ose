@@ -6,7 +6,7 @@
 %etop_res %{epics_root}/resources
 %etop_mtr %{epics_root}/motor/modules
 %etop_ad %{epics_root}/areaDetector
-%cmd_flags CMD_FLAGS='%{optflags}' CMD_CXXFLAGS='%{optflags}'
+%cmd_flags CMD_CFLAGS='%{optflags}' CMD_CXXFLAGS='%{optflags}'
 
 %_rm_extras _rm_extras %{buildroot}
 %_iocboot_makefiles _iocboot_makefiles %{epics_root}
@@ -80,6 +80,7 @@
 	for s in $(cat ioc.lst); do cd "$s" \
 	sed -i -e '/^AD.*=.*TOP/ s@=.*@=%{etop_supp}/%{repo}@' \\\
 		-e 's@$(TOP)/\\.\\./\\.\\./\\.\\.@%{etop_supp}@' \\\
-		configure/RELEASE; cd -; done \
+		configure/RELEASE; \\\
+	%_fix_arch iocBoot/ioc*/Makefile; cd -; done \
 %{nil}
 

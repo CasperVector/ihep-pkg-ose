@@ -1,6 +1,6 @@
 %define repo seq
 %define commit 2.2.9
-%{meta name license=EPICS version=commit,1}
+%{meta name license=EPICS version=commit,2}
 
 Summary:        EPICS - SNL compiler and runtime sequencer
 URL:            https://www-csr.bessy.de/control/SoftDist/sequencer

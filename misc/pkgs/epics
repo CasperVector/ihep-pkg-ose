@@ -18,5 +18,6 @@ motorNPoint motorNewFocus motorNewport motorOms motorOmsAsyn
 motorOriel motorPI motorPIGCS2 motorParker motorPhytron motorPiJena
 motorScriptMotor motorSmarAct motorSmartMotor motorThorLabs
 
-ADSimDetector ADAndor3 ADMerlin ADPilatus ADXspress3
+ADSimDetector ADAndor ADAndor3 ADEiger
+ADmarCCD ADMerlin ADPilatus ADXspress3
 

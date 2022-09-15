@@ -1,4 +1,4 @@
-%{meta license=EPICS version=3_1_17,1}
+%{meta license=EPICS version=3_1_17,2}
 
 Name:           epics-medm
 Summary:        EPICS - Motif Editor and Display Manager

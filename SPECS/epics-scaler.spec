@@ -1,6 +1,6 @@
 %define repo scaler
 %define commit 4.0
-%{meta name license=EPICS github=epics-modules version=commit,1}
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
 Summary:        EPICS - scaler record and related software
 BuildRequires:  epics-asyn, gcc-c++, make

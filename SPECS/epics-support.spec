@@ -3,7 +3,7 @@
 %define xcommit R6-2-1
 %define icommit R2-21-1
 %include %{_specdir}/classes/unbloat.spec
-%{meta name license=EPICS github=EPICS-synApps version=commit,1}
+%{meta name license=EPICS github=EPICS-synApps version=commit,2}
 
 Summary:        EPICS - synApps support files
 Source1:        %{github_archive epics-modules xxx %{xcommit}}

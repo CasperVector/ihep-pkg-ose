@@ -1,7 +1,7 @@
 %define etop_dest %{buildroot}%{etop_base}
 %define __arch_install_post true
 %include %{_specdir}/classes/unbloat.spec
-%{meta license=EPICS version=7.0.6.1,1}
+%{meta license=EPICS version=7.0.6.1,2}
 
 Name:           epics-base
 Summary:        Experimental Physics and Industrial Control System - Base

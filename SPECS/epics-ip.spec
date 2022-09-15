@@ -1,6 +1,6 @@
 %define repo ip
 %define commit R2-21-1
-%{meta name license=EPICS github=epics-modules version=commit,2}
+%{meta name license=EPICS github=epics-modules version=commit,3}
 
 Summary:        EPICS - Misc devices dating back to Industry Pack cards
 Patch0:         %{name}-2_21_1-app-libs-files.patch

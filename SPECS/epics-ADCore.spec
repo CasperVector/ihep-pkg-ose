@@ -3,7 +3,7 @@
 %define etop_ad %{epics_root}/areaDetector
 %define opimask */arrayPlot.* edl/simTop.edl
 %include %{_specdir}/classes/unbloat.spec
-%{meta name license=MIT github=areaDetector version=commit,2}
+%{meta name license=MIT github=areaDetector version=commit,3}
 
 Summary:        EPICS - areaDetector base classes and standard plugins
 Patch0:         %{name}-3_11-bugs.patch

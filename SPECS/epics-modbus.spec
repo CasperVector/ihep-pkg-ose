@@ -1,6 +1,6 @@
 %define repo modbus
 %define commit R3-2
-%{meta name license=MIT github=epics-modules version=commit,1}
+%{meta name license=MIT github=epics-modules version=commit,2}
 
 Summary:        EPICS - PLCs and other devices using the Modbus protocol
 Patch0:         %{name}-3_2-libs.patch

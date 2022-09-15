@@ -1,7 +1,8 @@
 %define repo s7nodave
 %define commit 3.0.2
-%define cmd_flags CMD_FLAGS='%{optflags}' CMD_CXXFLAGS='%{optflags} --std=c++11'
-%{meta name license=GPLv3+ version=commit,2}
+%define cmd_flags CMD_CFLAGS='%{optflags}' \\\
+	CMD_CXXFLAGS='%{optflags} --std=c++11'
+%{meta name license=GPLv3+ version=commit,3}
 
 Summary:        EPICS - Siemens S7 PLCs
 URL:            https://oss.aquenos.com/epics/%{repo}/

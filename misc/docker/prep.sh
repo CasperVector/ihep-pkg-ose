@@ -17,7 +17,7 @@ case "$ver" in
 	sed -i -e "s@http://dl.rockylinux.org/\\\$contentdir/@$mirror/rocky-linux/@" \
 		-e 's/^#baseurl=/baseurl=/' -e 's/^mirrorlist=/#&/' Rocky-*.repo;
 	sed -i '/^enabled=/ s/=1$/=0/' Rocky-Extras.repo)
-	yum install -y python39
+	yum install -y perl python39
 	alternatives --set python /usr/bin/python3
 	alternatives --set python3 /usr/bin/python3.9;;
 *)

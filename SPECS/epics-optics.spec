@@ -1,6 +1,6 @@
 %define repo optics
 %define commit R2-13-5
-%{meta name license=EPICS github=epics-modules version=commit,1}
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
 Summary:        EPICS - Monochromators, slits, mirrors, diffractometers etc
 Patch0:         %{name}-2_13_5-app-libs.patch
