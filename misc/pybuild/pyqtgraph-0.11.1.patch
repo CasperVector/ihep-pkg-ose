@@ -1,0 +1,1109 @@
+diff -ur pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py
+--- pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py	2020-12-19 11:01:04.000000000 +0800
++++ pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py	2022-10-05 13:57:57.610582204 +0800
+@@ -1,47 +1,39 @@
+-# -*- coding: utf-8 -*-
++import itertools
++import math
+ import warnings
+-from itertools import repeat, chain
+-try:
+-    from itertools import imap
+-except ImportError:
+-    imap = map
+-import numpy as np
+ import weakref
+-from ..Qt import QtGui, QtCore, QT_LIB
+-from ..Point import Point
++from collections import OrderedDict
++
++import numpy as np
++
++from .. import Qt, debug
+ from .. import functions as fn
+-from .GraphicsItem import GraphicsItem
+-from .GraphicsObject import GraphicsObject
+ from .. import getConfigOption
+-from ..pgcollections import OrderedDict
+-from .. import debug
+-from ..python2_3 import basestring
+-
++from ..Point import Point
++from ..Qt import QT_LIB, QtCore, QtGui
++from .GraphicsObject import GraphicsObject
+ 
+ __all__ = ['ScatterPlotItem', 'SpotItem']
+ 
+ 
+-# When pxMode=True for ScatterPlotItem, QPainter.drawPixmap is used for drawing, which
+-# has multiple type signatures. One takes int coordinates of source and target
+-# rectangles, and another takes QRectF objects. The latter approach has the overhead of
+-# updating these objects, which can be almost as much as drawing.
+-# For PyQt5, drawPixmap is significantly faster with QRectF coordinates for some
+-# reason, offsetting this overhead. For PySide2 this is not the case, and the QRectF
+-# maintenance overhead is an unnecessary burden. If this performance issue is solved
+-# by PyQt5, the QRectF coordinate approach can be removed by simply deleting all of the
+-# "if _USE_QRECT" code blocks in ScatterPlotItem. Ideally, drawPixmap would accept the
+-# numpy arrays of coordinates directly, which would improve performance significantly,
+-# as the separate calls to this method are the current bottleneck.
+-# See: https://bugreports.qt.io/browse/PYSIDE-163
+-
+-_USE_QRECT = QT_LIB != 'PySide2'
+-
+ ## Build all symbol paths
+ name_list = ['o', 's', 't', 't1', 't2', 't3', 'd', '+', 'x', 'p', 'h', 'star',
+-             'arrow_up', 'arrow_right', 'arrow_down', 'arrow_left']
++             'arrow_up', 'arrow_right', 'arrow_down', 'arrow_left', 'crosshair']
+ Symbols = OrderedDict([(name, QtGui.QPainterPath()) for name in name_list])
+ Symbols['o'].addEllipse(QtCore.QRectF(-0.5, -0.5, 1, 1))
+ Symbols['s'].addRect(QtCore.QRectF(-0.5, -0.5, 1, 1))
++
++def makeCrosshair(r=0.5, w=1, h=1):
++    path = QtGui.QPainterPath()
++    rect = QtCore.QRectF(-r, -r, r * 2, r * 2)
++    path.addEllipse(rect)
++    path.moveTo(-w, 0)
++    path.lineTo(w, 0)
++    path.moveTo(0, -h)
++    path.lineTo(0, h)
++    return path
++Symbols['crosshair'] = makeCrosshair()
++
+ coords = {
+     't': [(-0.5, -0.5), (0, 0.5), (0.5, -0.5)],
+     't1': [(-0.5, 0.5), (0, -0.5), (0.5, 0.5)],
+@@ -61,7 +53,7 @@
+              (-0.1816, 0.059), (-0.2939, 0.4045), (0, 0.1910),
+              (0.2939, 0.4045), (0.1816, 0.059), (0.4755, -0.1545),
+              (0.1123, -0.1545)],
+-    'arrow_down': [
++    'arrow_up': [
+         (-0.125, 0.125), (0, 0), (0.125, 0.125),
+         (0.05, 0.125), (0.05, 0.5), (-0.05, 0.5), (-0.05, 0.125)
+     ]
+@@ -75,9 +67,9 @@
+ tr.rotate(45)
+ Symbols['x'] = tr.map(Symbols['+'])
+ tr.rotate(45)
+-Symbols['arrow_right'] = tr.map(Symbols['arrow_down'])
+-Symbols['arrow_up'] = tr.map(Symbols['arrow_right'])
+-Symbols['arrow_left'] = tr.map(Symbols['arrow_up'])
++Symbols['arrow_right'] = tr.map(Symbols['arrow_up'])
++Symbols['arrow_down'] = tr.map(Symbols['arrow_right'])
++Symbols['arrow_left'] = tr.map(Symbols['arrow_down'])
+ _DEFAULT_STYLE = {'symbol': None, 'size': -1, 'pen': None, 'brush': None, 'visible': True}
+ 
+ 
+@@ -87,7 +79,7 @@
+     painter.scale(size, size)
+     painter.setPen(pen)
+     painter.setBrush(brush)
+-    if isinstance(symbol, basestring):
++    if isinstance(symbol, str):
+         symbol = Symbols[symbol]
+     if np.isscalar(symbol):
+         symbol = list(Symbols.values())[symbol % len(Symbols)]
+@@ -103,13 +95,13 @@
+     for more information).
+     """
+     ## Render a spot with the given parameters to a pixmap
+-    penPxWidth = max(np.ceil(pen.widthF()), 1)
++    penPxWidth = max(math.ceil(pen.widthF()), 1)
+     if device is None:
+-        device = QtGui.QImage(int(size+penPxWidth), int(size+penPxWidth), QtGui.QImage.Format_ARGB32)
+-        device.fill(0)
++        device = QtGui.QImage(int(size+penPxWidth), int(size+penPxWidth), QtGui.QImage.Format.Format_ARGB32)
++        device.fill(QtCore.Qt.GlobalColor.transparent)
+     p = QtGui.QPainter(device)
+     try:
+-        p.setRenderHint(p.Antialiasing)
++        p.setRenderHint(p.RenderHint.Antialiasing)
+         p.translate(device.width()*0.5, device.height()*0.5)
+         drawSymbol(p, symbol, size, pen, brush)
+     finally:
+@@ -118,7 +110,8 @@
+ 
+ def makeSymbolPixmap(size, pen, brush, symbol):
+     warnings.warn(
+-        "This is an internal function that is no longer being used.",
++        "This is an internal function that is no longer being used. "
++        "Will be removed in 0.13",
+         DeprecationWarning, stacklevel=2
+     )
+     img = renderSymbol(symbol, size, pen, brush)
+@@ -149,6 +142,42 @@
+         return fn.mkBrush(*args, **kwargs)
+ 
+ 
++class PixmapFragments:
++    def __init__(self):
++        self.alloc(0)
++
++    def alloc(self, size):
++        # The C++ native API is:
++        #   drawPixmapFragments(const PixmapFragment *fragments, int fragmentCount,
++        #                       const QPixmap &pixmap)
++        #
++        # PySide exposes this API whereas PyQt wraps it to be more Pythonic.
++        # In PyQt, a Python list of PixmapFragment instances needs to be provided.
++        # This is inefficient because:
++        # 1) constructing the Python list involves calling sip.wrapinstance multiple times.
++        #    - this is mitigated here by reusing the instance pointers
++        # 2) PyQt will anyway deconstruct the Python list and repack the PixmapFragment
++        #    instances into a contiguous array, in order to call the underlying C++ native API.
++        self.arr = np.empty((size, 10), dtype=np.float64)
++        if QT_LIB.startswith('PyQt'):
++            self.ptrs = list(map(Qt.sip.wrapinstance,
++                itertools.count(self.arr.ctypes.data, self.arr.strides[0]),
++                itertools.repeat(QtGui.QPainter.PixmapFragment, self.arr.shape[0])))
++        else:
++            self.ptrs = Qt.shiboken.wrapInstance(self.arr.ctypes.data, QtGui.QPainter.PixmapFragment)
++
++    def array(self, size):
++        if size > self.arr.shape[0]:
++            self.alloc(size + 16)
++        return self.arr[:size]
++
++    def draw(self, painter, size, pixmap):
++        if QT_LIB.startswith('PyQt'):
++            painter.drawPixmapFragments(self.ptrs[:size], pixmap)
++        else:
++            painter.drawPixmapFragments(self.ptrs, size, pixmap)
++
++
+ class SymbolAtlas(object):
+     """
+     Used to efficiently construct a single QPixmap containing all rendered symbols
+@@ -161,6 +190,8 @@
+         pm = atlas.pixmap
+ 
+     """
++    _idGenerator = itertools.count()
++
+     def __init__(self):
+         self._data = np.zeros((0, 0, 4), dtype=np.ubyte)  # numpy array of atlas image
+         self._coords = {}
+@@ -182,7 +213,7 @@
+         if new:
+             self._extend(new)
+ 
+-        return list(imap(self._coords.__getitem__, keys))
++        return list(map(self._coords.__getitem__, keys))
+ 
+     def __len__(self):
+         return len(self._coords)
+@@ -224,7 +255,17 @@
+                     squareness=1.0 if n == 0 else 2 * w * h / (w**2 + h**2))
+ 
+     def _keys(self, styles):
+-        return [(id(symbol), size, id(pen), id(brush)) for symbol, size, pen, brush in styles]
++        def getId(obj):
++            try:
++                return obj._id
++            except AttributeError:
++                obj._id = next(SymbolAtlas._idGenerator)
++                return obj._id
++
++        return [
++            (symbol if isinstance(symbol, (str, int)) else getId(symbol), size, getId(pen), getId(brush))
++            for symbol, size, pen, brush in styles
++        ]
+ 
+     def _itemData(self, keys):
+         for key in keys:
+@@ -375,18 +416,11 @@
+             ])
+         ]
+ 
+-        if _USE_QRECT:
+-            dtype.extend([
+-                ('sourceQRect', object),
+-                ('targetQRect', object),
+-                ('targetQRectValid', bool)
+-            ])
+-            self._sourceQRect = {}
+-
+         self.data = np.empty(0, dtype=dtype)
+         self.bounds = [None, None]  ## caches data bounds
+         self._maxSpotWidth = 0      ## maximum size of the scale-variant portion of all spots
+         self._maxSpotPxWidth = 0    ## maximum size of the scale-invariant portion of all spots
++        self._pixmapFragments = PixmapFragments()
+         self.opts = {
+             'pxMode': True,
+             'useCache': True,  ## If useCache is False, symbols are re-drawn on every paint.
+@@ -427,15 +461,11 @@
+                                Otherwise, size is in scene coordinates and the spots scale with the view. To ensure
+                                effective caching, QPen and QBrush objects should be reused as much as possible.
+                                Default is True
+-        *symbol*               can be one (or a list) of:
+-                               * 'o'  circle (default)
+-                               * 's'  square
+-                               * 't'  triangle
+-                               * 'd'  diamond
+-                               * '+'  plus
+-                               * any QPainterPath to specify custom symbol shapes. To properly obey the position and size,
+-                               custom symbols should be centered at (0,0) and width and height of 1.0. Note that it is also
+-                               possible to 'install' custom shapes by setting ScatterPlotItem.Symbols[key] = shape.
++        *symbol*               can be one (or a list) of symbols. For a list of supported symbols, see 
++                               :func:`~ScatterPlotItem.setSymbol`. QPainterPath is also supported to specify custom symbol
++                               shapes. To properly obey the position and size, custom symbols should be centered at (0,0) and
++                               width and height of 1.0. Note that it is also possible to 'install' custom shapes by setting 
++                               ScatterPlotItem.Symbols[key] = shape.
+         *pen*                  The pen (or list of pens) to use for drawing spot outlines.
+         *brush*                The brush (or list of brushes) to use for filling spots.
+         *size*                 The size (or list of sizes) of spots. If *pxMode* is True, this value is in pixels. Otherwise,
+@@ -449,7 +479,6 @@
+         *hoverSize*            A single size to use for hovered spots. Set to -1 to keep size unchanged. Default is -1.
+         *hoverPen*             A single pen to use for hovered spots. Set to None to keep pen unchanged. Default is None.
+         *hoverBrush*           A single brush to use for hovered spots. Set to None to keep brush unchanged. Default is None.
+-        *identical*            *Deprecated*. This functionality is handled automatically now.
+         *antialias*            Whether to draw symbols with antialiasing. Note that if pxMode is True, symbols are
+                                always rendered with antialiasing (since the rendered symbols can be cached, this
+                                incurs very little performance cost)
+@@ -461,7 +490,8 @@
+         """
+         if 'identical' in kargs:
+             warnings.warn(
+-                "The *identical* functionality is handled automatically now.",
++                "The *identical* functionality is handled automatically now. "
++                "Will be removed in 0.13.",
+                 DeprecationWarning, stacklevel=2
+             )
+         oldData = self.data  ## this causes cached pixmaps to be preserved while new data is registered.
+@@ -528,10 +558,6 @@
+         newData['size'] = -1  ## indicates to use default size
+         newData['visible'] = True
+ 
+-        if _USE_QRECT:
+-            newData['targetQRect'] = [QtCore.QRectF() for _ in range(numPts)]
+-            newData['targetQRectValid'] = False
+-
+         if 'spots' in kargs:
+             spots = kargs['spots']
+             for i in range(len(spots)):
+@@ -601,7 +627,8 @@
+ 
+     def setPoints(self, *args, **kargs):
+         warnings.warn(
+-            "Use setData instead.",
++            "ScatterPlotItem.setPoints is deprecated, use ScatterPlotItem.setData "
++            "instead.  Will be removed in 0.13",
+             DeprecationWarning, stacklevel=2
+         )
+         return self.setData(*args, **kargs)
+@@ -629,7 +656,7 @@
+                 pens = pens[kargs['mask']]
+             if len(pens) != len(dataSet):
+                 raise Exception("Number of pens does not match number of points (%d != %d)" % (len(pens), len(dataSet)))
+-            dataSet['pen'] = list(imap(_mkPen, pens))
++            dataSet['pen'] = list(map(_mkPen, pens))
+         else:
+             self.opts['pen'] = _mkPen(*args, **kargs)
+ 
+@@ -651,7 +678,7 @@
+                 brushes = brushes[kargs['mask']]
+             if len(brushes) != len(dataSet):
+                 raise Exception("Number of brushes does not match number of points (%d != %d)" % (len(brushes), len(dataSet)))
+-            dataSet['brush'] = list(imap(_mkBrush, brushes))
++            dataSet['brush'] = list(map(_mkBrush, brushes))
+         else:
+             self.opts['brush'] = _mkBrush(*args, **kargs)
+ 
+@@ -663,7 +690,30 @@
+         """Set the symbol(s) used to draw each spot.
+         If a list or array is provided, then the symbol for each spot will be set separately.
+         Otherwise, the argument will be used as the default symbol for
+-        all spots which do not have a symbol explicitly set."""
++        all spots which do not have a symbol explicitly set.
++
++        **Supported symbols:**
++
++        * 'o'  circle (default)
++        * 's'  square
++        * 't'  triangle
++        * 'd'  diamond
++        * '+'  plus
++        * 't1' triangle pointing upwards
++        * 't2'  triangle pointing right side
++        * 't3'  triangle pointing left side
++        * 'p'  pentagon
++        * 'h'  hexagon
++        * 'star'
++        * 'x'  cross
++        * 'arrow_up'
++        * 'arrow_right'
++        * 'arrow_down'
++        * 'arrow_left'
++        * 'crosshair'
++        * any QPainterPath to specify custom symbol shapes.
++
++        """
+         if dataSet is None:
+             dataSet = self.data
+ 
+@@ -763,15 +813,10 @@
+             mask = dataSet['sourceRect']['w'] == 0
+             if np.any(mask):
+                 invalidate = True
+-                dataSet['sourceRect'][mask] = self.fragmentAtlas[
++                coords = self.fragmentAtlas[
+                     list(zip(*self._style(['symbol', 'size', 'pen', 'brush'], data=dataSet, idx=mask)))
+                 ]
+-                if _USE_QRECT:
+-                    sr = dataSet['sourceRect'][mask]
+-                    sru = np.unique(sr)
+-                    list(imap(self._sourceQRect.__setitem__, imap(tuple, sru), imap(QtCore.QRectF, *zip(*sru))))
+-                    dataSet['sourceQRect'][mask] = list(imap(self._sourceQRect.__getitem__, imap(tuple, sr)))
+-                    dataSet['targetQRectValid'][mask] = False
++                dataSet['sourceRect'][mask] = coords
+ 
+             self._maybeRebuildAtlas()
+         else:
+@@ -789,8 +834,6 @@
+                 list(zip(*self._style(['symbol', 'size', 'pen', 'brush'])))
+             )
+             self.data['sourceRect'] = 0
+-            if _USE_QRECT:
+-                self._sourceQRect.clear()
+             self.updateSpots()
+ 
+     def _style(self, opts, data=None, idx=None, scale=None):
+@@ -821,7 +864,7 @@
+         if self.opts['pxMode'] and self.opts['useCache']:
+             w, pw = 0, self.fragmentAtlas.maxWidth
+         else:
+-            w, pw = max(chain([(self._maxSpotWidth, self._maxSpotPxWidth)],
++            w, pw = max(itertools.chain([(self._maxSpotWidth, self._maxSpotPxWidth)],
+                               self._measureSpotSizes(**kwargs)))
+         self._maxSpotWidth = w
+         self._maxSpotPxWidth = pw
+@@ -843,7 +886,8 @@
+ 
+     def getSpotOpts(self, recs, scale=1.0):
+         warnings.warn(
+-            "This is an internal method that is no longer being used.",
++            "This is an internal method that is no longer being used.  Will be "
++            "removed in 0.13",
+             DeprecationWarning, stacklevel=2
+         )
+         if recs.ndim == 0:
+@@ -872,7 +916,8 @@
+ 
+     def measureSpotSizes(self, dataSet):
+         warnings.warn(
+-            "This is an internal method that is no longer being used.",
++            "This is an internal method that is no longer being used. "
++            "Will be removed in 0.13.",
+             DeprecationWarning, stacklevel=2
+         )
+         for size, pen in zip(*self._style(['size', 'pen'], data=dataSet)):
+@@ -914,6 +959,8 @@
+         elif ax == 1:
+             d = self.data['y']
+             d2 = self.data['x']
++        else:
++            raise ValueError("Invalid axis value")
+ 
+         if orthoRange is not None:
+             mask = (d2 >= orthoRange[0]) * (d2 <= orthoRange[1])
+@@ -969,8 +1016,6 @@
+         self.prepareGeometryChange()
+         GraphicsObject.viewTransformChanged(self)
+         self.bounds = [None, None]
+-        if _USE_QRECT:
+-            self.data['targetQRectValid'] = False
+ 
+     def setExportMode(self, *args, **kwds):
+         GraphicsObject.setExportMode(self, *args, **kwds)
+@@ -978,7 +1023,8 @@
+ 
+     def mapPointsToDevice(self, pts):
+         warnings.warn(
+-            "This is an internal method that is no longer being used.",
++            "This is an internal method that is no longer being used. "
++            "Will be removed in 0.13",
+             DeprecationWarning, stacklevel=2
+         )
+         # Map point locations to device
+@@ -994,7 +1040,8 @@
+ 
+     def getViewMask(self, pts):
+         warnings.warn(
+-            "This is an internal method that is no longer being used.",
++            "This is an internal method that is no longer being used. "
++            "Will be removed in 0.13",
+             DeprecationWarning, stacklevel=2
+         )
+         # Return bool mask indicating all points that are within viewbox
+@@ -1035,52 +1082,27 @@
+             # Map points using painter's world transform so they are drawn with pixel-valued sizes
+             pts = np.vstack([self.data['x'], self.data['y']])
+             pts = fn.transformCoordinates(p.transform(), pts)
+-            pts = np.clip(pts, -2 ** 30, 2 ** 30)  # prevent Qt segmentation fault.
++            pts = fn.clip_array(pts, -2 ** 30, 2 ** 30)  # prevent Qt segmentation fault.
+             p.resetTransform()
+ 
+             if self.opts['useCache'] and self._exportOpts is False:
+-                # Map pts to (x, y) coordinates of targetRect
+-                pts -= self.data['sourceRect']['w'] / 2
+-
+                 # Draw symbols from pre-rendered atlas
+-                pm = self.fragmentAtlas.pixmap
+-
+-                if _USE_QRECT:
+-                    # Update targetRects if necessary
+-                    updateMask = viewMask & (~self.data['targetQRectValid'])
+-                    if np.any(updateMask):
+-                        x, y = pts[:, updateMask].tolist()
+-                        tr = self.data['targetQRect'][updateMask].tolist()
+-                        w = self.data['sourceRect']['w'][updateMask].tolist()
+-                        list(imap(QtCore.QRectF.setRect, tr, x, y, w, w))
+-                        self.data['targetQRectValid'][updateMask] = True
+-
+-                    profiler('prep')
+-                    if QT_LIB == 'PyQt4':
+-                        p.drawPixmapFragments(
+-                            self.data['targetQRect'][viewMask].tolist(),
+-                            self.data['sourceQRect'][viewMask].tolist(),
+-                            pm
+-                        )
+-                    else:
+-                        list(imap(p.drawPixmap,
+-                                  self.data['targetQRect'][viewMask].tolist(),
+-                                  repeat(pm),
+-                                  self.data['sourceQRect'][viewMask].tolist()))
+-                    profiler('draw')
+-                else:
+-                    x, y = pts[:, viewMask].astype(int)
+-                    sr = self.data['sourceRect'][viewMask]
+-
+-                    profiler('prep')
+-                    list(imap(p.drawPixmap,
+-                              x.tolist(), y.tolist(), repeat(pm),
+-                              sr['x'].tolist(), sr['y'].tolist(), sr['w'].tolist(), sr['h'].tolist()))
+-                    profiler('draw')
+ 
++                # x, y is the center of the target rect
++                xy = pts[:, viewMask].T
++                sr = self.data['sourceRect'][viewMask]
++
++                frags = self._pixmapFragments.array(sr.size)
++                frags[:, 0:2] = xy
++                frags[:, 2:6] = np.frombuffer(sr, dtype=int).reshape((-1, 4)) # sx, sy, sw, sh
++                frags[:, 6:10] = [1.0, 1.0, 0.0, 1.0]   # scaleX, scaleY, rotation, opacity
++
++                profiler('prep')
++                self._pixmapFragments.draw(p, len(frags), self.fragmentAtlas.pixmap)
++                profiler('draw')
+             else:
+                 # render each symbol individually
+-                p.setRenderHint(p.Antialiasing, aa)
++                p.setRenderHint(p.RenderHint.Antialiasing, aa)
+ 
+                 for pt, style in zip(
+                         pts[:, viewMask].T,
+@@ -1104,7 +1126,7 @@
+                     drawSymbol(p2, *style)
+                 p2.end()
+ 
+-            p.setRenderHint(p.Antialiasing, aa)
++            p.setRenderHint(p.RenderHint.Antialiasing, aa)
+             self.picture.play(p)
+ 
+     def points(self):
+@@ -1164,7 +1186,7 @@
+                 & (self.data['y'] - h < b))
+ 
+     def mouseClickEvent(self, ev):
+-        if ev.button() == QtCore.Qt.LeftButton:
++        if ev.button() == QtCore.Qt.MouseButton.LeftButton:
+             pts = self.pointsAt(ev.pos())
+             if len(pts) > 0:
+                 self.ptsClicked = pts
+diff -ur pyqtgraph-0.11.1/pyqtgraph/graphicsItems/TargetItem.py pyqtgraph-0.11.1/pyqtgraph/graphicsItems/TargetItem.py
+--- pyqtgraph-0.11.1/pyqtgraph/graphicsItems/TargetItem.py	2020-11-10 14:12:32.000000000 +0800
++++ pyqtgraph-0.11.1/pyqtgraph/graphicsItems/TargetItem.py	2022-10-05 13:56:50.379051289 +0800
+@@ -1,132 +1,477 @@
+-from ..Qt import QtGui, QtCore
+-import numpy as np
+-from ..Point import Point
++import string
++import warnings
++from math import atan2
++
+ from .. import functions as fn
++from ..Point import Point
++from ..Qt import QtCore, QtGui
+ from .GraphicsObject import GraphicsObject
++from .ScatterPlotItem import Symbols, makeCrosshair
+ from .TextItem import TextItem
++from .UIGraphicsItem import UIGraphicsItem
++from .ViewBox import ViewBox
+ 
++__all__ = ['TargetItem', 'TargetLabel']
+ 
+-class TargetItem(GraphicsObject):
++class TargetItem(UIGraphicsItem):
+     """Draws a draggable target symbol (circle plus crosshair).
+ 
+     The size of TargetItem will remain fixed on screen even as the view is zoomed.
+     Includes an optional text label.
+     """
+-    sigDragged = QtCore.Signal(object)
+ 
+-    def __init__(self, movable=True, radii=(5, 10, 10), pen=(255, 255, 0), brush=(0, 0, 255, 100)):
+-        GraphicsObject.__init__(self)
+-        self._bounds = None
+-        self._radii = radii
+-        self._picture = None
++    sigPositionChanged = QtCore.Signal(object)
++    sigPositionChangeFinished = QtCore.Signal(object)
++
++    def __init__(
++        self,
++        pos=None,
++        size=10,
++        radii=None,
++        symbol="crosshair",
++        pen=None,
++        hoverPen=None,
++        brush=None,
++        hoverBrush=None,
++        movable=True,
++        label=None,
++        labelOpts=None,
++    ):
++        r"""
++        Parameters
++        ----------
++        pos : list, tuple, QPointF, QPoint, Optional
++            Initial position of the symbol.  Default is (0, 0)
++        size : int
++            Size of the symbol in pixels.  Default is 10.
++        radii : tuple of int
++            Deprecated.  Gives size of crosshair in screen pixels.
++        pen : QPen, tuple, list or str
++            Pen to use when drawing line. Can be any arguments that are valid
++            for :func:`~pyqtgraph.mkPen`. Default pen is transparent yellow.
++        brush : QBrush, tuple, list, or str
++            Defines the brush that fill the symbol. Can be any arguments that
++            is valid for :func:`~pyqtgraph.mkBrush`. Default is transparent
++            blue.
++        movable : bool
++            If True, the symbol can be dragged to a new position by the user.
++        hoverPen : QPen, tuple, list, or str
++            Pen to use when drawing symbol when hovering over it. Can be any
++            arguments that are valid for :func:`~pyqtgraph.mkPen`. Default pen
++            is red.
++        hoverBrush : QBrush, tuple, list or str
++            Brush to use to fill the symbol when hovering over it. Can be any
++            arguments that is valid for :func:`~pyqtgraph.mkBrush`. Default is
++            transparent blue.
++        symbol : QPainterPath or str
++            QPainterPath to use for drawing the target, should be centered at
++            ``(0, 0)`` with ``max(width, height) == 1.0``.  Alternatively a string
++            which can be any symbol accepted by
++            :func:`~pyqtgraph.ScatterPlotItem.setSymbol`
++        label : bool, str or callable, optional
++            Text to be displayed in a label attached to the symbol, or None to
++            show no label (default is None). May optionally include formatting
++            strings to display the symbol value, or a callable that accepts x
++            and y as inputs.  If True, the label is ``x = {: >.3n}\ny = {: >.3n}``
++            False or None will result in no text being displayed
++        labelOpts : dict
++            A dict of keyword arguments to use when constructing the text
++            label. See :class:`TargetLabel` and :class:`~pyqtgraph.TextItem`
++        """
++        super().__init__(self)
+         self.movable = movable
+         self.moving = False
+-        self.label = None
+-        self.labelAngle = 0
+-        self.pen = fn.mkPen(pen)
+-        self.brush = fn.mkBrush(brush)
+-
+-    def setLabel(self, label):
+-        if label is None:
+-            if self.label is not None:
+-                self.label.scene().removeItem(self.label)
+-                self.label = None
+-        else:
+-            if self.label is None:
+-                self.label = TextItem()
+-                self.label.setParentItem(self)
+-            self.label.setText(label)
+-            self._updateLabel()
++        self._label = None
++        self.mouseHovering = False
+ 
+-    def setLabelAngle(self, angle):
+-        if self.labelAngle != angle:
+-            self.labelAngle = angle
+-            self._updateLabel()
++        if radii is not None:
++            warnings.warn(
++                "'radii' is now deprecated, and will be removed in 0.13.0. Use 'size' "
++                "parameter instead",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++            symbol = makeCrosshair(*radii)
++            size = 1
++
++        if pen is None:
++            pen = (255, 255, 0)
++        self.setPen(pen)
++
++        if hoverPen is None:
++            hoverPen = (255, 0, 255)
++        self.setHoverPen(hoverPen)
++
++        if brush is None:
++            brush = (0, 0, 255, 50)
++        self.setBrush(brush)
++
++        if hoverBrush is None:
++            hoverBrush = (0, 255, 255, 100)
++        self.setHoverBrush(hoverBrush)
++
++        self.currentPen = self.pen
++        self.currentBrush = self.brush
++
++        self._shape = None
++
++        self._pos = Point(0, 0)
++        if pos is None:
++            pos = Point(0, 0)
++        self.setPos(pos)
++
++        if isinstance(symbol, str):
++            try:
++                self._path = Symbols[symbol]
++            except KeyError:
++                raise KeyError("symbol name found in available Symbols")
++        elif isinstance(symbol, QtGui.QPainterPath):
++            self._path = symbol
++        else:
++            raise TypeError("Unknown type provided as symbol")
++
++        self.scale = size
++        self.setPath(self._path)
++        self.setLabel(label, labelOpts)
++
++    @property
++    def sigDragged(self):
++        warnings.warn(
++            "'sigDragged' has been deprecated and will be removed in 0.13.0.  Use "
++            "`sigPositionChangeFinished` instead",
++            DeprecationWarning,
++            stacklevel=2,
++        )
++        return self.sigPositionChangeFinished
++
++    def setPos(self, *args):
++        """Method to set the position to ``(x, y)`` within the plot view
++
++        Parameters
++        ----------
++        args : tuple, list, QPointF, QPoint, pg.Point, or two floats
++            Two float values or a container that specifies ``(x, y)`` position where the
++            TargetItem should be placed
++
++        Raises
++        ------
++        TypeError
++            If args cannot be used to instantiate a pg.Point
++        """
++        try:
++            newPos = Point(*args)
++        except TypeError:
++            raise
++        except Exception:
++            raise TypeError(f"Could not make Point from arguments: {args!r}")
++
++        if self._pos != newPos:
++            self._pos = newPos
++            super().setPos(self._pos)
++            self.sigPositionChanged.emit(self)
++
++    def setBrush(self, *args, **kwargs):
++        """Set the brush that fills the symbol. Allowable arguments are any that
++        are valid for :func:`~pyqtgraph.mkBrush`.
++        """
++        self.brush = fn.mkBrush(*args, **kwargs)
++        if not self.mouseHovering:
++            self.currentBrush = self.brush
++            self.update()
++
++    def setHoverBrush(self, *args, **kwargs):
++        """Set the brush that fills the symbol when hovering over it. Allowable
++        arguments are any that are valid for :func:`~pyqtgraph.mkBrush`.
++        """
++        self.hoverBrush = fn.mkBrush(*args, **kwargs)
++        if self.mouseHovering:
++            self.currentBrush = self.hoverBrush
++            self.update()
++
++    def setPen(self, *args, **kwargs):
++        """Set the pen for drawing the symbol. Allowable arguments are any that
++        are valid for :func:`~pyqtgraph.mkPen`."""
++        self.pen = fn.mkPen(*args, **kwargs)
++        if not self.mouseHovering:
++            self.currentPen = self.pen
++            self.update()
++
++    def setHoverPen(self, *args, **kwargs):
++        """Set the pen for drawing the symbol when hovering over it. Allowable
++        arguments are any that are valid for
++        :func:`~pyqtgraph.mkPen`."""
++        self.hoverPen = fn.mkPen(*args, **kwargs)
++        if self.mouseHovering:
++            self.currentPen = self.hoverPen
++            self.update()
+ 
+     def boundingRect(self):
+-        if self._picture is None:
+-            self._drawPicture()
+-        return self._bounds
+-    
+-    def dataBounds(self, axis, frac=1.0, orthoRange=None):
+-        return [0, 0]
++        return self.shape().boundingRect()
+ 
+-    def viewTransformChanged(self):
+-        self._picture = None
+-        self.prepareGeometryChange()
+-        self._updateLabel()
++    def paint(self, p, *_):
++        p.setPen(self.currentPen)
++        p.setBrush(self.currentBrush)
++        p.drawPath(self.shape())
++
++    def setPath(self, path):
++        if path != self._path:
++            self._path = path
++            self._shape = None
++        return None
++
++    def shape(self):
++        if self._shape is None:
++            s = self.generateShape()
++            if s is None:
++                return self._path
++            self._shape = s
++
++            # beware--this can cause the view to adjust
++            # which would immediately invalidate the shape.
++            self.prepareGeometryChange()
++        return self._shape
++
++    def generateShape(self):
++        dt = self.deviceTransform()
++        if dt is None:
++            self._shape = self._path
++            return None
++        v = dt.map(QtCore.QPointF(1, 0)) - dt.map(QtCore.QPointF(0, 0))
++        dti = fn.invertQTransform(dt)
++        devPos = dt.map(QtCore.QPointF(0, 0))
++        tr = QtGui.QTransform()
++        tr.translate(devPos.x(), devPos.y())
++        va = atan2(v.y(), v.x())
++        tr.rotateRadians(va)
++        tr.scale(self.scale, self.scale)
++        return dti.map(tr.map(self._path))
+ 
+-    def _updateLabel(self):
+-        if self.label is None:
++    def mouseDragEvent(self, ev):
++        if not self.movable or ev.button() != QtCore.Qt.MouseButton.LeftButton:
+             return
++        ev.accept()
++        if ev.isStart():
++            self.symbolOffset = self.pos() - self.mapToView(ev.buttonDownPos())
++            self.moving = True
+ 
+-        # find an optimal location for text at the given angle
+-        angle = self.labelAngle * np.pi / 180.
+-        lbr = self.label.boundingRect()
+-        center = lbr.center()
+-        a = abs(np.sin(angle) * lbr.height()*0.5)
+-        b = abs(np.cos(angle) * lbr.width()*0.5)
+-        r = max(self._radii) + 2 + max(a, b)
+-        pos = self.mapFromScene(self.mapToScene(QtCore.QPointF(0, 0)) + r * QtCore.QPointF(np.cos(angle), -np.sin(angle)) - center)
+-        self.label.setPos(pos)
+-
+-    def paint(self, p, *args):
+-        if self._picture is None:
+-            self._drawPicture()
+-        self._picture.play(p)
+-
+-    def _drawPicture(self):
+-        self._picture = QtGui.QPicture()
+-        p = QtGui.QPainter(self._picture)
+-        p.setRenderHint(p.Antialiasing)
+-        
+-        # Note: could do this with self.pixelLength, but this is faster.
+-        o = self.mapToScene(QtCore.QPointF(0, 0))
+-        dx = (self.mapToScene(QtCore.QPointF(1, 0)) - o).x()
+-        dy = (self.mapToScene(QtCore.QPointF(0, 1)) - o).y()
+-        if dx == 0 or dy == 0:
+-            p.end()
+-            self._bounds = QtCore.QRectF()
++        if not self.moving:
+             return
+-        px = abs(1.0 / dx)
+-        py = abs(1.0 / dy)
+-        
+-        r, w, h = self._radii
+-        w = w * px
+-        h = h * py
+-        rx = r * px
+-        ry = r * py
+-        rect = QtCore.QRectF(-rx, -ry, rx*2, ry*2)
+-        p.setPen(self.pen)
+-        p.setBrush(self.brush)
+-        p.drawEllipse(rect)
+-        p.drawLine(Point(-w, 0), Point(w, 0))
+-        p.drawLine(Point(0, -h), Point(0, h))
+-        p.end()
+-        
+-        bx = max(w, rx)
+-        by = max(h, ry)
+-        self._bounds = QtCore.QRectF(-bx, -by, bx*2, by*2)
++        self.setPos(self.symbolOffset + self.mapToView(ev.pos()))
+ 
+-    def mouseDragEvent(self, ev):
+-        if not self.movable:
+-            return
+-        if ev.button() == QtCore.Qt.LeftButton:
+-            if ev.isStart():
+-                self.moving = True
+-                self.cursorOffset = self.pos() - self.mapToParent(ev.buttonDownPos())
+-                self.startPosition = self.pos()
++        if ev.isFinish():
++            self.moving = False
++            self.sigPositionChangeFinished.emit(self)
++
++    def mouseClickEvent(self, ev):
++        if self.moving and ev.button() == QtCore.Qt.MouseButton.RightButton:
+             ev.accept()
+-            
+-            if not self.moving:
+-                return
+-                
+-            self.setPos(self.cursorOffset + self.mapToParent(ev.pos()))
+-            if ev.isFinish():
+-                self.moving = False
+-                self.sigDragged.emit(self)
++            self.moving = False
++            self.sigPositionChanged.emit(self)
++            self.sigPositionChangeFinished.emit(self)
++
++    def setMouseHover(self, hover):
++        # Inform the item that the mouse is(not) hovering over it
++        if self.mouseHovering is hover:
++            return
++        self.mouseHovering = hover
++        if hover:
++            self.currentBrush = self.hoverBrush
++            self.currentPen = self.hoverPen
++        else:
++            self.currentBrush = self.brush
++            self.currentPen = self.pen
++        self.update()
+ 
+     def hoverEvent(self, ev):
+-        if self.movable:
+-            ev.acceptDrags(QtCore.Qt.LeftButton)
++        if self.movable and (not ev.isExit()) and ev.acceptDrags(QtCore.Qt.MouseButton.LeftButton):
++            self.setMouseHover(True)
++        else:
++            self.setMouseHover(False)
++
++    def viewTransformChanged(self):
++        GraphicsObject.viewTransformChanged(self)
++        self._shape = None  # invalidate shape, recompute later if requested.
++        self.update()
++
++    def pos(self):
++        """Provides the current position of the TargetItem
++
++        Returns
++        -------
++        Point
++            pg.Point of the current position of the TargetItem
++        """
++        return self._pos
++
++    def label(self):
++        """Provides the TargetLabel if it exists
++
++        Returns
++        -------
++        TargetLabel or None
++            If a TargetLabel exists for this TargetItem, return that, otherwise
++            return None
++        """
++        return self._label
++
++    def setLabel(self, text=None, labelOpts=None):
++        """Method to call to enable or disable the TargetLabel for displaying text
++
++        Parameters
++        ----------
++        text : Callable or str, optional
++            Details how to format the text, by default None
++            If None, do not show any text next to the TargetItem
++            If Callable, then the label will display the result of ``text(x, y)``
++            If a fromatted string, then the output of ``text.format(x, y)`` will be
++            displayed
++            If a non-formatted string, then the text label will display ``text``, by
++            default None
++        labelOpts : dictionary, optional
++            These arguments are passed on to :class:`~pyqtgraph.TextItem`
++        """
++        if not text:
++            if self._label is not None and self._label.scene() is not None:
++                # remove the label if it's already added
++                self._label.scene().removeItem(self._label)
++            self._label = None
++        else:
++            # provide default text if text is True
++            if text is True:
++                # convert to default value or empty string
++                text = "x = {: .3n}\ny = {: .3n}"
++
++            labelOpts = {} if labelOpts is None else labelOpts
++            if self._label is not None:
++                self._label.scene().removeItem(self._label)
++            self._label = TargetLabel(self, text=text, **labelOpts)
++
++    def setLabelAngle(self, angle):
++        warnings.warn(
++            "TargetItem.setLabelAngle is deprecated and will be removed in 0.13.0."
++            "Use TargetItem.label().setAngle() instead",
++            DeprecationWarning,
++            stacklevel=2,
++        )
++        if self.label() is not None and angle != self.label().angle:
++            self.label().setAngle(angle)
++        return None
++
++
++class TargetLabel(TextItem):
++    """A TextItem that attaches itself to a TargetItem.
++
++    This class extends TextItem with the following features :
++      * Automatically positions adjacent to the symbol at a fixed position.
++      * Automatically reformats text when the symbol location has changed.
++
++    Parameters
++    ----------
++    target : TargetItem
++        The TargetItem to which this label will be attached to.
++    text : str or callable, Optional
++        Governs the text displayed, can be a fixed string or a format string
++        that accepts the x, and y position of the target item; or be a callable
++        method that accepts a tuple (x, y) and returns a string to be displayed.
++        If None, an empty string is used.  Default is None
++    offset : tuple or list or QPointF or QPoint
++        Position to set the anchor of the TargetLabel away from the center of
++        the target in pixels, by default it is (20, 0).
++    anchor : tuple, list, QPointF or QPoint
++        Position to rotate the TargetLabel about, and position to set the
++        offset value to see :class:`~pyqtgraph.TextItem` for more information.
++    kwargs : dict of arguments that are passed on to
++        :class:`~pyqtgraph.TextItem` constructor, excluding text parameter
++    """
++
++    def __init__(
++        self,
++        target,
++        text="",
++        offset=(20, 0),
++        anchor=(0, 0.5),
++        **kwargs,
++    ):
++        if isinstance(offset, Point):
++            self.offset = offset
++        elif isinstance(offset, (tuple, list)):
++            self.offset = Point(*offset)
++        elif isinstance(offset, (QtCore.QPoint, QtCore.QPointF)):
++            self.offset = Point(offset.x(), offset.y())
++        else:
++            raise TypeError("Offset parameter is the wrong data type")
++
++        super().__init__(anchor=anchor, **kwargs)
++        self.setParentItem(target)
++        self.target = target
++        self.setFormat(text)
++
++        self.target.sigPositionChanged.connect(self.valueChanged)
++        self.valueChanged()
++
++    def format(self):
++        return self._format
++
++    def setFormat(self, text):
++        """Method to set how the TargetLabel should display the text.  This
++        method should be called from TargetItem.setLabel directly.
++
++        Parameters
++        ----------
++        text : Callable or str
++            Details how to format the text.
++            If Callable, then the label will display the result of ``text(x, y)``
++            If a fromatted string, then the output of ``text.format(x, y)`` will be
++            displayed
++            If a non-formatted string, then the text label will display ``text``
++        """
++        if not callable(text):
++            parsed = list(string.Formatter().parse(text))
++            if parsed and parsed[0][1] is not None:
++                self.setProperty("formattableText", True)
++            else:
++                self.setText(text)
++                self.setProperty("formattableText", False)
++        else:
++            self.setProperty("formattableText", False)
++        self._format = text
++        self.valueChanged()
++
++    def valueChanged(self):
++        x, y = self.target.pos()
++        if self.property("formattableText"):
++            self.setText(self._format.format(float(x), float(y)))
++        elif callable(self._format):
++            self.setText(self._format(x, y))
++
++    def viewTransformChanged(self):
++        viewbox = self.getViewBox()
++        if isinstance(viewbox, ViewBox):
++            viewPixelSize = viewbox.viewPixelSize()
++            scaledOffset = QtCore.QPointF(
++                self.offset.x() * viewPixelSize[0], self.offset.y() * viewPixelSize[1]
++            )
++            self.setPos(scaledOffset)
++        return super().viewTransformChanged()
++
++    def mouseClickEvent(self, ev):
++        return self.parentItem().mouseClickEvent(ev)
++
++    def mouseDragEvent(self, ev):
++        targetItem = self.parentItem()
++        if not targetItem.movable or ev.button() != QtCore.Qt.MouseButton.LeftButton:
++            return
++        ev.accept()
++        if ev.isStart():
++            targetItem.symbolOffset = targetItem.pos() - self.mapToView(
++                ev.buttonDownPos()
++            )
++            targetItem.moving = True
++
++        if not targetItem.moving:
++            return
++        targetItem.setPos(targetItem.symbolOffset + self.mapToView(ev.pos()))
+ 
++        if ev.isFinish():
++            targetItem.moving = False
++            targetItem.sigPositionChangeFinished.emit(self)

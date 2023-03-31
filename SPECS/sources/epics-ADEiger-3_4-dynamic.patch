@@ -1,0 +1,11 @@
+diff -ur ADEiger/iocs/eigerIOC/configure/CONFIG_SITE ADEiger/iocs/eigerIOC/configure/CONFIG_SITE
+--- ADEiger/iocs/eigerIOC/configure/CONFIG_SITE	2022-06-11 05:49:37.000000000 +0800
++++ ADEiger/iocs/eigerIOC/configure/CONFIG_SITE	2022-08-19 00:07:53.656633420 +0800
+@@ -11,6 +11,6 @@
+ #   take effect.
+ #IOCS_APPL_TOP = </IOC/path/to/application/top>
+ 
+-STATIC_BUILD = YES
++STATIC_BUILD = NO
+ 
+ include $(ADEIGER)/configure/CONFIG_SITE

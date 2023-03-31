@@ -1,0 +1,439 @@
+diff --git a/bluesky/plan_patterns.py b/bluesky/plan_patterns.py
+index a4f6f46e..f4d2c962 100644
+--- a/bluesky/plan_patterns.py
++++ b/bluesky/plan_patterns.py
+@@ -353,7 +353,7 @@ def outer_list_product(args, snake_axes):
+         c = cycler(motor, pos_list)
+         cyclers.append(c)
+ 
+-    return snake_cyclers(cyclers, snaking)
++    return snake_cyclers(cyclers, snaking), snaking
+ 
+ 
+ def inner_product(num, args):
+@@ -569,4 +569,4 @@ def outer_product(args):
+         c = cycler(motor, steps)
+         cyclers.append(c)
+ 
+-    return snake_cyclers(cyclers, snaking)
++    return snake_cyclers(cyclers, snaking), snaking
+diff --git a/bluesky/plans.py b/bluesky/plans.py
+index b718cbb2..ff8a4660 100644
+--- a/bluesky/plans.py
++++ b/bluesky/plans.py
+@@ -20,6 +20,7 @@ from .utils import Msg
+ 
+ from . import preprocessors as bpp
+ from . import plan_stubs as bps
++from . import progress as bprog
+ 
+ 
+ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
+@@ -68,8 +69,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
+     if per_shot is None:
+         per_shot = bps.one_shot
+ 
+-    @bpp.stage_decorator(detectors)
+-    @bpp.run_decorator(md=_md)
++    @bpp.stage_run_decorator(detectors, md=_md)
+     def inner_count():
+         return (yield from bps.repeat(partial(per_shot, detectors),
+                                       num=num, delay=delay))
+@@ -77,7 +77,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
+     return (yield from inner_count())
+ 
+ 
+-def list_scan(detectors, *args, per_step=None, md=None):
++def list_scan(detectors, *args, per_step=None, md=None, frag=False):
+     """
+     Scan over one or more variables in steps simultaneously (inner product).
+ 
+@@ -173,8 +173,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
+ 
+     full_cycler = plan_patterns.inner_list_product(args)
+ 
+-    return (yield from scan_nd(detectors, full_cycler, per_step=per_step,
+-                               md=_md))
++    return scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
+ 
+ 
+ def rel_list_scan(detectors, *args, per_step=None, md=None):
+@@ -229,7 +228,7 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
+     return (yield from inner_relative_list_scan())
+ 
+ 
+-def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
++def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None, frag=False):
+     """
+     Scan over a mesh; each motor is on an independent trajectory.
+ 
+@@ -268,7 +267,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+     :func:`bluesky.plans.rel_list_scan`
+     """
+ 
+-    full_cycler = plan_patterns.outer_list_product(args, snake_axes)
++    full_cycler, snaking = plan_patterns.outer_list_product(args, snake_axes)
+ 
+     md_args = []
+     motor_names = []
+@@ -300,8 +299,8 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+     except (AttributeError, KeyError):
+         ...
+ 
+-    return (yield from scan_nd(detectors, full_cycler,
+-                               per_step=per_step, md=_md))
++    ret = scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
++    return (snaking, ret) if frag else ret
+ 
+ 
+ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
+@@ -414,8 +413,7 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
+ 
+     steps = np.linspace(**_md['plan_pattern_args'])
+ 
+-    @bpp.stage_decorator(list(detectors) + [motor])
+-    @bpp.run_decorator(md=_md)
++    @bpp.stage_run_decorator(list(detectors) + [motor], md=_md)
+     def inner_scan():
+         for step in steps:
+             yield from per_step(detectors, motor, step)
+@@ -516,8 +514,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+ 
+     steps = np.logspace(**_md['plan_pattern_args'])
+ 
+-    @bpp.stage_decorator(list(detectors) + [motor])
+-    @bpp.run_decorator(md=_md)
++    @bpp.stage_run_decorator(list(detectors) + [motor], md=_md)
+     def inner_log_scan():
+         for step in steps:
+             yield from per_step(detectors, motor, step)
+@@ -626,8 +623,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
+     else:
+         _md['hints'].setdefault('dimensions', dimensions)
+ 
+-    @bpp.stage_decorator(list(detectors) + [motor])
+-    @bpp.run_decorator(md=_md)
++    @bpp.stage_run_decorator(list(detectors) + [motor], md=_md)
+     def adaptive_core():
+         next_pos = start
+         step = (max_step - min_step) / 2
+@@ -821,8 +817,7 @@ def tune_centroid(
+     low_limit = min(start, stop)
+     high_limit = max(start, stop)
+ 
+-    @bpp.stage_decorator(list(detectors) + [motor])
+-    @bpp.run_decorator(md=_md)
++    @bpp.stage_run_decorator(list(detectors) + [motor], md=_md)
+     def _tune_core(start, stop, num, signal):
+         next_pos = start
+         step = (stop - start) / (num - 1)
+@@ -870,7 +865,7 @@ def tune_centroid(
+     return (yield from _tune_core(start, stop, num, signal))
+ 
+ 
+-def scan_nd(detectors, cycler, *, per_step=None, md=None):
++def scan_nd(detectors, cycler, *, per_step=None, md=None, frag=False):
+     """
+     Scan over an arbitrary N-dimensional trajectory.
+ 
+@@ -992,12 +987,15 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
+     cycler = utils.merge_cycler(cycler)
+     motors = list(cycler.keys)
+ 
+-    @bpp.stage_decorator(list(detectors) + motors)
+-    @bpp.run_decorator(md=_md)
+-    def inner_scan_nd():
+-        for step in list(cycler):
+-            yield from per_step(detectors, step, pos_cache)
+-
++    if frag:
++        def inner_scan_nd():
++            for step in list(cycler):
++                yield per_step(detectors, step, pos_cache)
++    else:
++        @bpp.stage_run_decorator(list(detectors) + motors, md=_md)
++        def inner_scan_nd():
++            for step in list(cycler):
++                yield from per_step(detectors, step, pos_cache)
+     return (yield from inner_scan_nd())
+ 
+ 
+@@ -1009,7 +1007,8 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
+     yield from scan(detectors, *args, num, per_step=None, md=md)
+ 
+ 
+-def scan(detectors, *args, num=None, per_step=None, md=None):
++def scan(detectors, *args, num=None, per_step=None, md=None,
++         frag=False, progress=None):
+     """
+     Scan over one multi-motor trajectory.
+ 
+@@ -1078,6 +1077,8 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
+            'motors': motor_names
+            }
+     _md.update(md)
++    if progress:
++        progress.bind(bprog.ProgressSimple([num]))
+ 
+     # get hints for best effort callback
+     motors = [motor for motor, start, stop in partition(3, args)]
+@@ -1103,11 +1104,11 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
+ 
+     full_cycler = plan_patterns.inner_product(num=num, args=args)
+ 
+-    return (yield from scan_nd(detectors, full_cycler,
+-                               per_step=per_step, md=_md))
++    return scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
+ 
+ 
+-def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
++def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None,
++              frag=False, progress=None):
+     """
+     Scan over a mesh; each motor is on an independent trajectory.
+ 
+@@ -1242,13 +1243,15 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+             args_modified.extend(chunk[:-1])
+         else:
+             args_modified.extend(chunk)
+-    full_cycler = plan_patterns.outer_product(args=args_modified)
++    full_cycler, snaking = plan_patterns.outer_product(args=args_modified)
+ 
+     md_args = []
++    progress_nums = []
+     motor_names = []
+     motors = []
+     for i, (motor, start, stop, num, snake) in enumerate(chunk_args):
+         md_args.extend([repr(motor), start, stop, num])
++        progress_nums.append(num)
+         if i > 0:
+             # snake argument only shows up after the first motor
+             md_args.append(snake)
+@@ -1278,9 +1281,11 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+                                                for m in motors])
+     except (AttributeError, KeyError):
+         ...
++    if progress:
++        progress.bind(bprog.ProgressSimple(progress_nums))
+ 
+-    return (yield from scan_nd(detectors, full_cycler,
+-                               per_step=per_step, md=_md))
++    ret = scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
++    return (snaking, ret) if frag else ret
+ 
+ 
+ def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+@@ -1437,8 +1442,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
+         def clear_output(wait=False):
+             pass
+ 
+-    @bpp.stage_decorator([detector, motor])
+-    @bpp.run_decorator(md=_md)
++    @bpp.stage_run_decorator([detector, motor], md=_md)
+     def tweak_core():
+         nonlocal step
+ 
+@@ -1475,7 +1479,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
+ 
+ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
+                   y_range, dr, factor, *, dr_y=None, tilt=0.0, per_step=None,
+-                  md=None):
++                  md=None, frag=False):
+     '''Absolute fermat spiral scan, centered around (x_start, y_start)
+ 
+     Parameters
+@@ -1547,7 +1551,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
+         _md['hints'].update({'dimensions': dimensions})
+     _md.update(md or {})
+ 
+-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
++    return scan_nd(detectors, cyc, per_step=per_step, md=_md, frag=frag)
+ 
+ 
+ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
+@@ -1604,7 +1608,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
+ 
+ 
+ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
+-           nth, *, dr_y=None, tilt=0.0, per_step=None, md=None):
++           nth, *, dr_y=None, tilt=0.0, per_step=None, md=None, frag=False):
+     '''Spiral scan, centered around (x_start, y_start)
+ 
+     Parameters
+@@ -1674,7 +1678,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
+         _md['hints'].update({'dimensions': dimensions})
+     _md.update(md or {})
+ 
+-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
++    return scan_nd(detectors, cyc, per_step=per_step, md=_md, frag=frag)
+ 
+ 
+ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
+@@ -1729,7 +1733,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
+ 
+ 
+ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
+-                  y_range, x_num, y_num, *, per_step=None, md=None):
++                  y_range, x_num, y_num, *, per_step=None, md=None, frag=False):
+     '''Absolute square spiral scan, centered around (x_center, y_center)
+ 
+     Parameters
+@@ -1796,7 +1800,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
+     except (AttributeError, KeyError):
+         ...
+ 
+-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
++    return scan_nd(detectors, cyc, per_step=per_step, md=_md, frag=frag)
+ 
+ 
+ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
+diff --git a/bluesky/preprocessors.py b/bluesky/preprocessors.py
+index 1c667daa..603139be 100644
+--- a/bluesky/preprocessors.py
++++ b/bluesky/preprocessors.py
+@@ -952,6 +952,47 @@ def stage_wrapper(plan, devices):
+     return (yield from finalize_wrapper(inner(), unstage_devices()))
+ 
+ 
++def stage_run_wrapper(plan, devices, *, md=None):
++    devices = separate_devices(root_ancestor(device) for device in devices)
++    def unstage_devices():
++        for d in reversed(devices):
++            yield Msg('unstage', d)
++    def handle_exception(e):
++        if isinstance(e, RunEngineControlException):
++            yield from close_run(exit_status=e.exit_status)
++        else:
++            yield from close_run(exit_status='fail', reason=str(e))
++        raise e
++
++    try:
++        for d in devices:
++            yield Msg('stage', d)
++    except:
++        yield from unstage_devices()
++        raise
++
++    try:
++        ret = yield from open_run(md)
++        yield from plan
++    except GeneratorExit:
++        raise
++    except Exception as e:
++        try:
++            yield from unstage_devices()
++        finally:
++            yield from handle_exception(e)
++
++    try:
++        yield from unstage_devices()
++    except GeneratorExit:
++        raise
++    except Exception as e:
++        yield from handle_exception(e)
++
++    yield from close_run()
++    return ret
++
++
+ def _normalize_devices(devices):
+     coupled_parents = set()
+     # if we have any pseudo devices then setting any part of it
+@@ -1176,6 +1217,7 @@ fly_during_decorator = make_decorator(fly_during_wrapper)
+ monitor_during_decorator = make_decorator(monitor_during_wrapper)
+ inject_md_decorator = make_decorator(inject_md_wrapper)
+ run_decorator = make_decorator(run_wrapper)
++stage_run_decorator = make_decorator(stage_run_wrapper)
+ contingency_decorator = make_decorator(contingency_wrapper)
+ stub_decorator = make_decorator(stub_wrapper)
+ configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
+diff --git a/bluesky/progress.py b/bluesky/progress.py
+new file mode 100644
+index 00000000..68daaa9b
+--- /dev/null
++++ b/bluesky/progress.py
+@@ -0,0 +1,58 @@
++from .callbacks.core import CallbackBase
++
++class ProgressReporter(object):
++    def __init__(self, mzs):
++        self.mzs = mzs
++        self.bind(None)
++
++    def __call__(self, *args, **kwargs):
++        if self.progress:
++            self.progress(*args, **kwargs)
++
++    def bind(self, progress):
++        if progress:
++            progress.reporter = self
++        self.progress = progress
++
++    def report(self, progress, eta):
++        self.mzs.notify({"typ": "scan/progress",
++            "progress": progress, "eta": eta})
++
++class ProgressBase(CallbackBase):
++    def stop(self, doc):
++        self.reporter.progress = None
++
++class ProgressSimple(ProgressBase):
++    def __init__(self, nums):
++        self.nums = nums
++
++    def start(self, doc):
++        self.scan, self.first, self.prev = doc["scan_id"], None, None
++        self.idx, self.progress = 0, [[0, 0.0] for n in self.nums]
++        gaps = [1]
++        for n in reversed(self.nums):
++            gaps.append(gaps[-1] * n)
++        self.steps, self.num = list(reversed(gaps[:-1])), gaps[-1]
++        self.steps = [[self.num // gap, gap] for gap in self.steps]
++        for i in range(len(self.nums)):
++            self.steps[i][0] -= sum(step[0] for step in self.steps[:i])
++        self.steps[0][0] -= 1
++
++    def event(self, doc):
++        self.idx, cur = self.idx + 1, doc["time"]
++        percent = self.idx / self.num
++        if self.idx == 1:
++            self.first = self.prev = cur
++            self.reporter.report(percent, None)
++            return
++        for i, step in enumerate(self.steps):
++            if not self.idx % step[1]:
++                break
++        self.progress[i][0] += 1
++        self.progress[i][1] += cur - self.prev
++        delta, self.prev = 0.0, cur
++        for step, prog in zip(self.steps, self.progress):
++            if prog[0]:
++                delta += prog[1] / prog[0] * step[0]
++        self.reporter.report(percent, self.first + delta)
++
+diff --git a/bluesky/tests/test_plan_patterns.py b/bluesky/tests/test_plan_patterns.py
+index 30c85149..41779302 100644
+--- a/bluesky/tests/test_plan_patterns.py
++++ b/bluesky/tests/test_plan_patterns.py
+@@ -269,7 +269,7 @@ def test_outer_product(hw, args):
+     # Convert motor names to actual motors in the argument list using fixture 'hw'
+     args = [getattr(hw, _) if isinstance(_, str) else _ for _ in args]
+ 
+-    full_cycler = outer_product(args=args)
++    full_cycler = outer_product(args=args)[0]
+     event_list = list(full_cycler)
+ 
+     # The list of motors
+diff --git a/bluesky/tests/test_plans.py b/bluesky/tests/test_plans.py
+index 7a05a410..d07bf129 100644
+--- a/bluesky/tests/test_plans.py
++++ b/bluesky/tests/test_plans.py
+@@ -451,7 +451,7 @@ def _grid_scan_position_list(args, snake_axes):
+ 
+     # Note, that outer_product is used to generate the list of coordinate points
+     #   while the plan is executed, but it is tested elsewhere, so it can be trusted
+-    full_cycler = outer_product(args=args_modified)
++    full_cycler = outer_product(args=args_modified)[0]
+     event_list = list(full_cycler)
+ 
+     # The list of motors

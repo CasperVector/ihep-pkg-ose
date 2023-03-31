@@ -45,8 +45,8 @@
 
 %_mtr_ad_prep0 \
 	. %{_specdir}/fn-build.sh; _mv_commit %{repo} %{commit}; cd %{repo} \
-	sed -i 's@$(TOP)/\\.\\.@%{etop_supp}@' configure/RELEASE \
-	%_my_patch; cd -; mv %{repo}/iocs/*IOC . && \
+	%_my_patch; sed -i 's@$(TOP)/\\.\\.@%{etop_supp}@' configure/RELEASE \
+	cd -; mv %{repo}/iocs/*IOC . && \
 		echo *IOC > ioc.lst || touch ioc.lst; rm -rf %{repo}/iocs \
 %{nil}
 %_mtr_ad_build \

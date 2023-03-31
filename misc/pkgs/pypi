@@ -1,3 +1,3 @@
 bluesky ophyd databroker pyepics h5py hdf5plugin ipython matplotlib
-PyQt5 pyqtgraph pyzmq suitcase-csv suitcase-json_metadata
+PyQt5 pyqtgraph pyzmq opencv-python-headless suitcase-csv suitcase-json-metadata
 

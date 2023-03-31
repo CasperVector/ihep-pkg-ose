@@ -55,8 +55,8 @@ do_build() {
 	do_clean
 }
 
-pkg="$1"; shift
 set -x
+pkg="$1"; shift
 . "$pybuild"/"$pkg".sh
 eval "$@"
 

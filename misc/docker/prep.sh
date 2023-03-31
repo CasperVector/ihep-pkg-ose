@@ -1,7 +1,8 @@
 #!/bin/sh -xe
 
 mirror='https://mirrors.bangmod.cloud'
-ver="$(sed -n 's/.*_PRODUCT_VERSION=//p' /etc/os-release | tr -cd 0-9)"
+ver="$(sed -n 's/.*_PRODUCT_VERSION=//p' /etc/os-release |
+	sed 1q | tr -cd 0-9. | sed 's/\..*//')"
 chmod 0644 /etc/yum.repos.d/ihep.repo; chmod 0755 /init.sh
 case "$ver" in
 7)
@@ -11,6 +12,7 @@ case "$ver" in
 	sed -i -e 's/^#baseurl=/baseurl=/' -e 's/^mirrorlist=/#&/' \
 		-e "s@http://mirror\\.centos\\.org/centos/@$mirror/centos/@" \
 		-e "s@http://vault\\.centos\\.org/@$mirror/centos/@" CentOS-*.repo)
+	yum install -y python3
 	yum reinstall -y hostname;;
 8)
 	(cd /etc/yum.repos.d; rm Rocky-Sources.repo Rocky-Media.repo;

@@ -32,7 +32,7 @@ LD_LIBRARY_PATH=%{etop_dest}/lib/%{epics_arch} \
 	make %{?_smp_mflags} %{cmd_flags} \
 	EPICS_HOST_ARCH=%{epics_arch} INSTALL_LOCATION=%{etop_dest} \
 	DESTDIR=%{buildroot} install
-rm -f %{etop_dest}/dbd/softIoc.dbd
+rm %{etop_dest}/dbd/softIoc.dbd
 cd %{etop_dest}/bin/%{epics_arch}
 	rm S99caRepeater S99logServer caRepeater.service; cd -
 mkdir -p %{buildroot}/etc/profile.d

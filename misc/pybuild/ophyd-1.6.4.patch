@@ -1,0 +1,848 @@
+diff --git a/ophyd/areadetector/filestore_mixins.py b/ophyd/areadetector/filestore_mixins.py
+index e4982e8..112008b 100644
+--- a/ophyd/areadetector/filestore_mixins.py
++++ b/ophyd/areadetector/filestore_mixins.py
+@@ -356,20 +356,17 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
+         self._datum_uids[key].append(reading)
+         return datum_id
+ 
+-    def describe(self):
+-        # One object has been 'described' once, no new keys can be added
+-        # during this stage/unstage cycle.
+-        self._locked_key_list = (self._staged == Staged.yes)
+-        res = super().describe()
+-        for k in self._datum_uids:
++    def describe(self, dot=False):
++        res = super().describe(dot)
++        for k in self.parent._datum_keys:
+             res[k] = self.parent.make_data_key()  # this is on DetectorBase
+         return res
+ 
+-    def read(self):
++    def read(self, dot=False):
+         # One object has been 'read' once, no new keys can be added
+         # during this stage/unstage cycle.
+         self._locked_key_list = (self._staged == Staged.yes)
+-        res = super().read()
++        res = super().read(dot)
+         for k, v in self._datum_uids.items():
+             res[k] = v[-1]
+         return res
+diff --git a/ophyd/areadetector/plugins.py b/ophyd/areadetector/plugins.py
+index 6b50e2f..2515793 100644
+--- a/ophyd/areadetector/plugins.py
++++ b/ophyd/areadetector/plugins.py
+@@ -109,9 +109,12 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
+         self.enable_on_stage()
+         self.stage_sigs.move_to_end('enable', last=False)
+         self.ensure_blocking()
+-        if self.parent is not None and hasattr(self.parent, 'cam'):
+-            self.stage_sigs.update([('parent.cam.array_callbacks', 1),
+-                                    ])
++        try:
++            self.parent.cam.array_callbacks
++        except AttributeError:
++            pass
++        else:
++            self.stage_sigs.update([('parent.cam.array_callbacks', 1)])
+ 
+     _html_docs = ['pluginDoc.html']
+     _plugin_type = None
+@@ -196,10 +199,10 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
+ 
+         return pixels
+ 
+-    def read_configuration(self):
+-        ret = super().read_configuration()
++    def read_configuration(self, dot=False):
++        ret = super().read_configuration(dot)
+ 
+-        ret.update(self.source_plugin.read_configuration())
++        ret.update(self.source_plugin.read_configuration(dot))
+ 
+         return ret
+ 
+@@ -211,11 +214,11 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
+         source_plugin = self.ad_root.get_plugin_by_asyn_port(source_port)
+         return source_plugin
+ 
+-    def describe_configuration(self):
+-        ret = super().describe_configuration()
++    def describe_configuration(self, dot=False):
++        ret = super().describe_configuration(dot)
+ 
+         source_plugin = self.source_plugin
+-        ret.update(source_plugin.describe_configuration())
++        ret.update(source_plugin.describe_configuration(dot))
+ 
+         return ret
+ 
+diff --git a/ophyd/areadetector/trigger_mixins.py b/ophyd/areadetector/trigger_mixins.py
+index 830abe3..2f3a554 100644
+--- a/ophyd/areadetector/trigger_mixins.py
++++ b/ophyd/areadetector/trigger_mixins.py
+@@ -33,7 +33,7 @@ class ADTriggerStatus(DeviceStatus):
+ 
+         # Notify watchers (things like progress bars) of new values
+         # at the device's natural update rate.
+-        if not self.done:
++        if not self.done and hasattr(self.device.cam, "array_counter"):
+             self.device.cam.array_counter.subscribe(self._notify_watchers)
+             # some state needed only by self._notify_watchers
+             self._name = self.device.name
+@@ -89,9 +89,7 @@ class TriggerBase(BlueskyInterface):
+         # careful here: quadEM devices have areadetector components but,
+         # they have no 'cam' plugin. See QuadEM initializer.
+         if hasattr(self, 'cam'):
+-            self.stage_sigs.update([('cam.acquire', 0),  # If acquiring, stop
+-                                    ('cam.image_mode', 1),  # 'Multiple' mode
+-                                    ])
++            self.stage_sigs.update([('cam.acquire', 0)])  # If acquiring, stop
+             self._acquisition_signal = self.cam.acquire
+ 
+         self._status = None
+@@ -117,6 +115,7 @@ class SingleTrigger(TriggerBase):
+         if image_name is None:
+             image_name = '_'.join([self.name, 'image'])
+         self._image_name = image_name
++        self._datum_keys = [image_name]
+ 
+     def stage(self):
+         self._acquisition_signal.subscribe(self._acquire_changed)
+@@ -200,6 +199,7 @@ class MultiTrigger(TriggerBase):
+         if trigger_cycle is None:
+             raise ValueError("must provide trigger_cycle -- see docstring")
+         self.trigger_cycle = trigger_cycle
++        self._datum_keys = [k for k, v in trigger_cycle[0]]
+         super().__init__(*args, **kwargs)
+ 
+     def stage(self):
+diff --git a/ophyd/device.py b/ophyd/device.py
+index b2e3ec0..509987d 100644
+--- a/ophyd/device.py
++++ b/ophyd/device.py
+@@ -439,7 +439,7 @@ class BlueskyInterface:
+         """
+         pass
+ 
+-    def read(self) -> OrderedDictType[str, Dict[str, Any]]:
++    def read(self, dot=False) -> OrderedDictType[str, Dict[str, Any]]:
+         """Read data from the device.
+ 
+         This method is expected to be as instantaneous as possible,
+@@ -466,7 +466,7 @@ class BlueskyInterface:
+         """
+         return OrderedDict()
+ 
+-    def describe(self) -> OrderedDictType[str, Dict[str, Any]]:
++    def describe(self, dot=False) -> OrderedDictType[str, Dict[str, Any]]:
+         """Provide schema and meta-data for :meth:`~BlueskyInterface.read`.
+ 
+         This keys in the `OrderedDict` this method returns must match the
+@@ -1230,14 +1230,15 @@ class Device(BlueskyInterface, OphydObject):
+         return sig
+ 
+     @doc_annotation_forwarder(BlueskyInterface)
+-    def read(self):
+-        res = super().read()
++    def read(self, dot=False):
++        res = super().read(dot)
+ 
+         for _, component in self._get_components_of_kind(Kind.normal):
+-            res.update(component.read())
++            res.update(component.read(dot))
+         return res
+ 
+-    def read_configuration(self) -> OrderedDictType[str, Dict[str, Any]]:
++    def read_configuration(self, dot=False) \
++        -> OrderedDictType[str, Dict[str, Any]]:
+         """Dictionary mapping names to value dicts with keys: value, timestamp
+ 
+         To control which fields are included, change the Component kinds on the
+@@ -1246,17 +1247,18 @@ class Device(BlueskyInterface, OphydObject):
+         res = OrderedDict()
+ 
+         for _, component in self._get_components_of_kind(Kind.config):
+-            res.update(component.read_configuration())
++            res.update(component.read_configuration(dot))
+         return res
+ 
+     @doc_annotation_forwarder(BlueskyInterface)
+-    def describe(self):
+-        res = super().describe()
++    def describe(self, dot=False):
++        res = super().describe(dot)
+         for _, component in self._get_components_of_kind(Kind.normal):
+-            res.update(component.describe())
++            res.update(component.describe(dot))
+         return res
+ 
+-    def describe_configuration(self) -> OrderedDictType[str, Dict[str, Any]]:
++    def describe_configuration(self, dot=False) \
++        -> OrderedDictType[str, Dict[str, Any]]:
+         """Provide schema & meta-data for :meth:`~BlueskyInterface.read_configuration`
+ 
+         This keys in the `OrderedDict` this method returns must match the
+@@ -1273,7 +1275,7 @@ class Device(BlueskyInterface, OphydObject):
+         """
+         res = OrderedDict()
+         for _, component in self._get_components_of_kind(Kind.config):
+-            res.update(component.describe_configuration())
++            res.update(component.describe_configuration(dot))
+         return res
+ 
+     @property
+@@ -1393,8 +1395,8 @@ class Device(BlueskyInterface, OphydObject):
+         '''
+         return cls._device_tuple
+ 
+-    def configure(self,
+-                  d: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
++    def configure(self, d: Dict[str, Any], action: bool = False) \
++        -> Tuple[Dict[str, Any], Dict[str, Any]]:
+         '''Configure the device for something during a run
+ 
+         This default implementation allows the user to change any of the
+@@ -1414,7 +1416,7 @@ class Device(BlueskyInterface, OphydObject):
+         '''
+         old = self.read_configuration()
+         for key, val in d.items():
+-            if key not in self.configuration_attrs:
++            if key not in self.configuration_attrs and not action:
+                 # a little extra checking for a more specific error msg
+                 if key not in self.component_names:
+                     raise ValueError("There is no signal named %s" % key)
+@@ -1422,7 +1424,7 @@ class Device(BlueskyInterface, OphydObject):
+                     raise ValueError("%s is not one of the "
+                                      "configuration_fields, so it cannot be "
+                                      "changed using configure" % key)
+-            set_and_wait(getattr(self, key), val)
++            getattr(self, key).set(val, timeout=10).wait()
+         new = self.read_configuration()
+         return old, new
+ 
+diff --git a/ophyd/docs/utils.py b/ophyd/docs/utils.py
+index 58cf98c..50107d4 100644
+--- a/ophyd/docs/utils.py
++++ b/ophyd/docs/utils.py
+@@ -45,6 +45,7 @@ OPHYD_SKIP = {
+     'component_names',
+     # 'configuration_attrs',
+     # 'connected',
++    'vname',
+     'dotted_name',
+     'event_types',
+     # 'hints',
+diff --git a/ophyd/epics_motor.py b/ophyd/epics_motor.py
+index 1940fce..a636c9a 100644
+--- a/ophyd/epics_motor.py
++++ b/ophyd/epics_motor.py
+@@ -42,12 +42,12 @@ class EpicsMotor(Device, PositionerBase):
+     """
+ 
+     # position
+-    user_readback = Cpt(EpicsSignalRO, ".RBV", kind="hinted", auto_monitor=True)
+-    user_setpoint = Cpt(EpicsSignal, ".VAL", limits=True, auto_monitor=True)
++    readback = Cpt(EpicsSignalRO, ".RBV", kind="hinted", auto_monitor=True)
++    setpoint = Cpt(EpicsSignal, ".VAL", limits=True, auto_monitor=True)
+ 
+     # calibration dial <-> user
+-    user_offset = Cpt(EpicsSignal, ".OFF", kind="config", auto_monitor=True)
+-    user_offset_dir = Cpt(EpicsSignal, ".DIR", kind="config", auto_monitor=True)
++    offset = Cpt(EpicsSignal, ".OFF", kind="config", auto_monitor=True)
++    offset_dir = Cpt(EpicsSignal, ".DIR", kind="config", auto_monitor=True)
+     offset_freeze_switch = Cpt(EpicsSignal, ".FOFF", kind="omitted", auto_monitor=True)
+     set_use_switch = Cpt(EpicsSignal, ".SET", kind="omitted", auto_monitor=True)
+ 
+@@ -55,14 +55,15 @@ class EpicsMotor(Device, PositionerBase):
+     velocity = Cpt(EpicsSignal, ".VELO", kind="config", auto_monitor=True)
+     acceleration = Cpt(EpicsSignal, ".ACCL", kind="config", auto_monitor=True)
+     motor_egu = Cpt(EpicsSignal, ".EGU", kind="config", auto_monitor=True)
++    motor_eres = Cpt(EpicsSignal, ".ERES", kind="config", auto_monitor=True)
++    high_limit_travel = Cpt(EpicsSignal, ".HLM", kind="config", auto_monitor=True)
++    low_limit_travel = Cpt(EpicsSignal, ".LLM", kind="config", auto_monitor=True)
+ 
+     # motor status
+     motor_is_moving = Cpt(EpicsSignalRO, ".MOVN", kind="omitted", auto_monitor=True)
+     motor_done_move = Cpt(EpicsSignalRO, ".DMOV", kind="omitted", auto_monitor=True)
+     high_limit_switch = Cpt(EpicsSignalRO, ".HLS", kind="omitted", auto_monitor=True)
+     low_limit_switch = Cpt(EpicsSignalRO, ".LLS", kind="omitted", auto_monitor=True)
+-    high_limit_travel = Cpt(EpicsSignal, ".HLM", kind="omitted", auto_monitor=True)
+-    low_limit_travel = Cpt(EpicsSignal, ".LLM", kind="omitted", auto_monitor=True)
+     direction_of_travel = Cpt(EpicsSignal, ".TDIR", kind="omitted", auto_monitor=True)
+ 
+     # commands
+@@ -80,9 +81,9 @@ class EpicsMotor(Device, PositionerBase):
+                          configuration_attrs=configuration_attrs,
+                          parent=parent, **kwargs)
+ 
+-        # Make the default alias for the user_readback the name of the
++        # Make the default alias for the readback the name of the
+         # motor itself.
+-        self.user_readback.name = self.name
++        self.readback.name = self.name
+ 
+         def on_limit_changed(value, old_value, **kwargs):
+             """
+@@ -93,9 +94,9 @@ class EpicsMotor(Device, PositionerBase):
+                 and old_value is not None
+                 and value != old_value
+             ):
+-                self.user_setpoint._metadata_changed(
+-                    self.user_setpoint.pvname,
+-                    self.user_setpoint._read_pv.get_ctrlvars(),
++                self.setpoint._metadata_changed(
++                    self.setpoint.pvname,
++                    self.setpoint._read_pv.get_ctrlvars(),
+                     from_monitor=True,
+                     update=True,
+                 )
+@@ -106,7 +107,7 @@ class EpicsMotor(Device, PositionerBase):
+     @property
+     def precision(self):
+         '''The precision of the readback PV, as reported by EPICS'''
+-        return self.user_readback.precision
++        return self.readback.precision
+ 
+     @property
+     def egu(self):
+@@ -116,7 +117,7 @@ class EpicsMotor(Device, PositionerBase):
+     @property
+     @raise_if_disconnected
+     def limits(self):
+-        return self.user_setpoint.limits
++        return self.setpoint.limits
+ 
+     @property
+     @raise_if_disconnected
+@@ -167,7 +168,7 @@ class EpicsMotor(Device, PositionerBase):
+         self._started_moving = False
+ 
+         status = super().move(position, **kwargs)
+-        self.user_setpoint.put(position, wait=False)
++        self.setpoint.put(position, wait=False)
+         try:
+             if wait:
+                 status_wait(status)
+@@ -200,7 +201,7 @@ class EpicsMotor(Device, PositionerBase):
+         '''
+         self.set_use_switch.put(1, wait=True)
+         try:
+-            self.user_setpoint.put(pos, wait=True, force=True)
++            self.setpoint.put(pos, wait=True, force=True)
+         finally:
+             self.set_use_switch.put(0, wait=True)
+ 
+@@ -235,10 +236,10 @@ class EpicsMotor(Device, PositionerBase):
+ 
+     def check_value(self, pos):
+         '''Check that the position is within the soft limits'''
+-        self.user_setpoint.check_value(pos)
++        self.setpoint.check_value(pos)
+ 
+     @required_for_connection
+-    @user_readback.sub_value
++    @readback.sub_value
+     def _pos_changed(self, timestamp=None, value=None, **kwargs):
+         '''Callback from EPICS, indicating a change in position'''
+         self._set_position(value)
+@@ -276,10 +277,10 @@ class EpicsMotor(Device, PositionerBase):
+             # Check the severity of the alarm field after motion is complete.
+             # If there is any alarm at all warn the user, and if the alarm is
+             # greater than what is tolerated, mark the move as unsuccessful
+-            severity = self.user_readback.alarm_severity
++            severity = self.readback.alarm_severity
+ 
+             if severity != AlarmSeverity.NO_ALARM:
+-                status = self.user_readback.alarm_status
++                status = self.readback.alarm_status
+                 if severity > self.tolerated_alarm:
+                     self.log.error('Motion failed: %s is in an alarm state '
+                                    'status=%s severity=%s',
+@@ -299,7 +300,7 @@ class EpicsMotor(Device, PositionerBase):
+         except DisconnectedError:
+             # TODO there might be more in this that gets lost
+             rep = {'position': 'disconnected'}
+-        rep['pv'] = self.user_readback.pvname
++        rep['pv'] = self.readback.pvname
+         return rep
+ 
+     def get_lim(self, flag):
+diff --git a/ophyd/flyers.py b/ophyd/flyers.py
+index b9f9055..e8d017b 100644
+--- a/ophyd/flyers.py
++++ b/ophyd/flyers.py
+@@ -74,7 +74,7 @@ class FlyerInterface(BlueskyInterface):
+         timestamps : dict
+         '''
+ 
+-    def describe_collect(self) -> Dict[str, Dict]:
++    def describe_collect(self, dot=False) -> Dict[str, Dict]:
+         '''Provide schema & meta-data from :meth:`collect`
+ 
+         This is analogous to :meth:`describe`, but nested by stream name.
+@@ -159,11 +159,11 @@ class AreaDetectorTimeseriesCollector(Device):
+                    'timestamps': {self.name: t},
+                    'time': t}
+ 
+-    def describe_collect(self):
++    def describe_collect(self, dot=False):
+         '''Describe details for the flyer collect() method'''
+         desc = OrderedDict()
+-        desc.update(self.waveform.describe())
+-        desc.update(self.waveform_ts.describe())
++        desc.update(self.waveform.describe(dot))
++        desc.update(self.waveform_ts.describe(dot))
+         return {self.stream_name: desc}
+ 
+ 
+@@ -246,9 +246,9 @@ class WaveformCollector(Device):
+         yield from super()._repr_info()
+         yield ('data_is_time', self.data_is_time.get())
+ 
+-    def describe_collect(self):
++    def describe_collect(self, dot=False):
+         '''Describe details for the flyer collect() method'''
+-        desc = self._describe_attr_list(['waveform'])
++        desc = self._describe_attr_list(['waveform'], dot)
+         return {self.stream_name: desc}
+ 
+ 
+@@ -338,30 +338,30 @@ class MonitorFlyerMixin(BlueskyInterface):
+         obj = getattr(self, attr)
+         return self.stream_names.get(attr, obj.name)
+ 
+-    def _describe_attr_list(self, attrs):
++    def _describe_attr_list(self, attrs, dot=False):
+         desc = OrderedDict()
+         for attr in attrs:
+-            desc.update(getattr(self, attr).describe())
++            desc.update(getattr(self, attr).describe(dot))
+         return desc
+ 
+-    def _describe_with_dtype(self, attr, *, dtype='array'):
++    def _describe_with_dtype(self, attr, *, dtype='array', dot=False):
+         '''Describe an attribute and change its dtype'''
+-        desc = self._describe_attr_list([attr])
++        desc = self._describe_attr_list([attr], dot)
+ 
+         obj = getattr(self, attr)
+         desc[obj.name]['dtype'] = dtype
+         return desc
+ 
+-    def describe_collect(self):
++    def describe_collect(self, dot=False):
+         '''Description of monitored attributes retrieved by collect'''
+         if self._pivot:
+             return {self._get_stream_name(attr):
+-                    self._describe_attr_list([attr])
++                    self._describe_attr_list([attr], dot)
+                     for attr in self.monitor_attrs
+                     }
+         else:
+             return {self._get_stream_name(attr):
+-                    self._describe_with_dtype(attr, dtype='array')
++                    self._describe_with_dtype(attr, dtype='array', dot=dot)
+                     for attr in self.monitor_attrs
+                     }
+ 
+diff --git a/ophyd/ophydobj.py b/ophyd/ophydobj.py
+index 4f1cf69..fb64b9c 100644
+--- a/ophyd/ophydobj.py
++++ b/ophyd/ophydobj.py
+@@ -134,7 +134,7 @@ class OphydObject:
+     # may want to know whether it has already "missed" any instances.
+     __any_instantiated = False
+ 
+-    def __init__(self, *, name=None, attr_name='', parent=None, labels=None,
++    def __init__(self, *, name=None, attr_name=None, parent=None, labels=None,
+                  kind=None):
+         if labels is None:
+             labels = set()
+@@ -148,12 +148,21 @@ class OphydObject:
+         # base name and ref to parent, these go with properties
+         if name is None:
+             name = ''
++
++        if attr_name is None:
++            attr_name = name
+         self._attr_name = attr_name
+-        if not isinstance(name, str):
+-            raise ValueError("name must be a string.")
++        name = name.replace(".", "_")
+         self._name = name
+         self._parent = parent
+ 
++        names, obj = [], self
++        while obj is not None:
++            names.append(obj.attr_name)
++            obj = obj.parent
++        self._vname = ".".join(names[::-1])
++        self.dotted_name = ".".join(names[-2::-1])
++
+         self.subscriptions = {getattr(self, k)
+                               for k in dir(type(self))
+                               if (k.startswith('SUB') or
+@@ -285,18 +294,6 @@ class OphydObject:
+     def kind(self, val):
+         self._kind = self._validate_kind(val)
+ 
+-    @property
+-    def dotted_name(self) -> str:
+-        """Return the dotted name
+-
+-        """
+-        names = []
+-        obj = self
+-        while obj.parent is not None:
+-            names.append(obj.attr_name)
+-            obj = obj.parent
+-        return '.'.join(names[::-1])
+-
+     @property
+     def name(self):
+         '''name of the device'''
+@@ -306,6 +303,9 @@ class OphydObject:
+     def name(self, name):
+         self._name = name
+ 
++    def vname(self, dot = True):
++        return self._vname if dot else self.name
++
+     @property
+     def attr_name(self):
+         return self._attr_name
+diff --git a/ophyd/positioner.py b/ophyd/positioner.py
+index 0929734..9cb8498 100644
+--- a/ophyd/positioner.py
++++ b/ophyd/positioner.py
+@@ -370,13 +370,13 @@ class SoftPositioner(PositionerBase):
+         yield ('limits', self._limits)
+         yield ('source', self.source)
+ 
+-    def read(self):
++    def read(self, dot=False):
+         d = OrderedDict()
+-        d[self.name] = {'value': self.position,
+-                        'timestamp': time.time()}
++        d[self.vname(dot)] = {'value': self.position,
++                              'timestamp': time.time()}
+         return d
+ 
+-    def describe(self):
++    def describe(self, dot=False):
+         """Return the description as a dictionary
+ 
+         Returns
+@@ -385,19 +385,20 @@ class SoftPositioner(PositionerBase):
+             Dictionary of name and formatted description string
+         """
+         desc = OrderedDict()
+-        desc[self.name] = {'source': str(self.source),
+-                           'dtype': data_type(self.position),
+-                           'shape': data_shape(self.position),
+-                           'units': self.egu,
+-                           'lower_ctrl_limit': self.low_limit,
+-                           'upper_ctrl_limit': self.high_limit,
+-                           }
++        desc[self.vname(dot)] = \
++            {'source': str(self.source),
++            'dtype': data_type(self.position),
++            'shape': data_shape(self.position),
++            'units': self.egu,
++            'lower_ctrl_limit': self.low_limit,
++            'upper_ctrl_limit': self.high_limit,
++            }
+         return desc
+ 
+-    def read_configuration(self):
++    def read_configuration(self, dot=False):
+         return OrderedDict()
+ 
+-    def describe_configuration(self):
++    def describe_configuration(self, dot=False):
+         return OrderedDict()
+ 
+     def check_value(self, pos):
+diff --git a/ophyd/pseudopos.py b/ophyd/pseudopos.py
+index 7d47e38..0da3c56 100644
+--- a/ophyd/pseudopos.py
++++ b/ophyd/pseudopos.py
+@@ -164,11 +164,12 @@ class PseudoSingle(Device, SoftPositioner):
+         self._target = pos
+         return self._parent.move_single(self, pos, **kwargs)
+ 
+-    def describe(self):
+-        desc = super().describe()
++    def describe(self, dot=False):
++        desc = super().describe(dot)
+         low_limit, high_limit = self.limits
+ 
+-        for d in (desc[self.readback.name], desc[self.setpoint.name]):
++        for d in (desc[self.readback.vname(dot)],
++                  desc[self.setpoint.vname(dot)]):
+             d['upper_ctrl_limit'] = high_limit
+             d['lower_ctrl_limit'] = low_limit
+             d['units'] = self.egu
+diff --git a/ophyd/signal.py b/ophyd/signal.py
+index 632cee9..1e7e10e 100644
+--- a/ophyd/signal.py
++++ b/ophyd/signal.py
+@@ -88,7 +88,7 @@ class Signal(OphydObject):
+ 
+     def __init__(self, *, name, value=0., timestamp=None, parent=None,
+                  labels=None, kind=Kind.hinted, tolerance=None,
+-                 rtolerance=None, metadata=None, cl=None, attr_name=''):
++                 rtolerance=None, metadata=None, cl=None, attr_name=None):
+ 
+         super().__init__(name=name, parent=parent, kind=kind, labels=labels,
+                          attr_name=attr_name)
+@@ -378,7 +378,7 @@ class Signal(OphydObject):
+         self.put(value)
+ 
+     @raise_if_disconnected
+-    def read(self):
++    def read(self, dot=False):
+         '''Put the status of the signal into a simple dictionary format
+         for data acquisition
+ 
+@@ -387,10 +387,10 @@ class Signal(OphydObject):
+             dict
+         '''
+         value = self.get()
+-        return {self.name: {'value': value,
+-                            'timestamp': self.timestamp}}
++        return {self.vname(dot): {'value': value,
++                                  'timestamp': self.timestamp}}
+ 
+-    def describe(self):
++    def describe(self, dot=False):
+         """Provide schema and meta-data for :meth:`~BlueskyInterface.read`
+ 
+         This keys in the `OrderedDict` this method returns must match the
+@@ -411,7 +411,7 @@ class Signal(OphydObject):
+             val = self._readback
+         try:
+             return {
+-                self.name: {
++                self.vname(dot): {
+                     'source': 'SIM:{}'.format(self.name),
+                     'dtype': data_type(val),
+                     'shape': data_shape(val)
+@@ -422,11 +422,11 @@ class Signal(OphydObject):
+             # help the humans by reporting self.name in the exception chain
+             raise ValueError(f"failed to describe '{self.name}' with value '{val}'") from ve
+ 
+-    def read_configuration(self):
++    def read_configuration(self, dot=False):
+         'Dictionary mapping names to value dicts with keys: value, timestamp'
+-        return self.read()
++        return self.read(dot)
+ 
+-    def describe_configuration(self):
++    def describe_configuration(self, dot=False):
+         """Provide schema & meta-data for `~BlueskyInterface.read_configuration`
+ 
+         This keys in the `OrderedDict` this method returns must match the keys
+@@ -441,7 +441,7 @@ class Signal(OphydObject):
+             The keys must be strings and the values must be dict-like
+             with the ``event_model.event_descriptor.data_key`` schema.
+         """
+-        return self.describe()
++        return self.describe(dot)
+ 
+     @property
+     def limits(self):
+@@ -580,12 +580,13 @@ class DerivedSignal(Signal):
+         '''Signal that this one is derived from'''
+         return self._derived_from
+ 
+-    def describe(self):
++    def describe(self, dot=False):
+         '''Description based on the original signal description'''
+-        desc = super().describe()[self.name]  # Description of this signal
+-        desc['derived_from'] = self._derived_from.name
++        names = self.vname(dot), self._derived_from.vname(dot)
++        desc = super().describe(dot)[names[0]]  # Description of this signal
++        desc['derived_from'] = names[1]
+         # Description of the derived signal
+-        derived_desc = self._derived_from.describe()[self._derived_from.name]
++        derived_desc = self._derived_from.describe(dot)[names[1]]
+         derived_desc.update(desc)
+         return {self.name: derived_desc}
+ 
+@@ -1242,7 +1243,7 @@ class EpicsSignalBase(Signal):
+         super().put(value=value, timestamp=metadata.pop('timestamp'),
+                     metadata=metadata, force=True)
+ 
+-    def describe(self):
++    def describe(self, dot=False):
+         """Return the description as a dictionary
+ 
+         Returns
+@@ -1270,7 +1271,7 @@ class EpicsSignalBase(Signal):
+         if self.enum_strs is not None:
+             desc['enum_strs'] = tuple(self.enum_strs)
+ 
+-        return {self.name: desc}
++        return {self.vname(dot): desc}
+ 
+ 
+ class EpicsSignalRO(EpicsSignalBase):
+@@ -1903,13 +1904,14 @@ class AttributeSignal(Signal):
+         self._run_subs(sub_type=self.SUB_VALUE, old_value=old_value,
+                        value=value, timestamp=time.time())
+ 
+-    def describe(self):
++    def describe(self, dot=False):
+         value = self.get()
+-        desc = {'source': 'PY:{}.{}'.format(self.parent.name, self.full_attr),
++        desc = {'source': 'PY:{}.{}'.format\
++                    (self.parent.vname(), self.full_attr),
+                 'dtype': data_type(value),
+                 'shape': data_shape(value),
+                 }
+-        return {self.name: desc}
++        return {self.vname(dot): desc}
+ 
+ 
+ class ArrayAttributeSignal(AttributeSignal):
+diff --git a/ophyd/sim.py b/ophyd/sim.py
+index 544685e..fbc908a 100644
+--- a/ophyd/sim.py
++++ b/ophyd/sim.py
+@@ -78,9 +78,9 @@ class EnumSignal(Signal):
+                 return str(value)
+         return value
+ 
+-    def describe(self):
+-        desc = super().describe()
+-        desc[self.name]['enum_strs'] = self._enum_strs
++    def describe(self, dot=False):
++        desc = super().describe(dot)
++        desc[self.vname(dot)]['enum_strs'] = self._enum_strs
+         return desc
+ 
+ 
+@@ -138,8 +138,8 @@ class SynSignal(Signal):
+             connected=True,
+         )
+ 
+-    def describe(self):
+-        res = super().describe()
++    def describe(self, dot=False):
++        res = super().describe(dot)
+         # There should be only one key here, but for the sake of generality....
+         for k in res:
+             res[k]['precision'] = self.precision
+@@ -288,9 +288,9 @@ class SynPeriodicSignal(SynSignal):
+         self._start_simulation_deprecated()
+         return super().set(*args, **kwargs)
+ 
+-    def read(self):
++    def read(self, dot=False):
+         self._start_simulation_deprecated()
+-        return super().read()
++        return super().read(dot)
+ 
+     def subscribe(self, *args, **kwargs):
+         self._start_simulation_deprecated()
+@@ -309,8 +309,8 @@ class _ReadbackSignal(Signal):
+         self._readback = self.parent.sim_state['readback']
+         return self._readback
+ 
+-    def describe(self):
+-        res = super().describe()
++    def describe(self, dot=False):
++        res = super().describe(dot)
+         # There should be only one key here, but for the sake of
+         # generality....
+         for k in res:
+@@ -338,8 +338,8 @@ class _SetpointSignal(Signal):
+         self._readback = self.parent.sim_state['setpoint']
+         return self.parent.sim_state['setpoint']
+ 
+-    def describe(self):
+-        res = super().describe()
++    def describe(self, dot=False):
++        res = super().describe(dot)
+         # There should be only one key here, but for the sake of generality....
+         for k in res:
+             res[k]['precision'] = self.parent.precision
+@@ -680,13 +680,13 @@ class TrivialFlyer:
+     def kickoff(self):
+         return NullStatus()
+ 
+-    def describe_collect(self):
++    def describe_collect(self, dot=False):
+         return {'stream_name': {}}
+ 
+-    def read_configuration(self):
++    def read_configuration(self, dot=False):
+         return OrderedDict()
+ 
+-    def describe_configuration(self):
++    def describe_configuration(self, dot=False):
+         return OrderedDict()
+ 
+     def complete(self):
+@@ -757,17 +757,17 @@ class MockFlyer:
+     def __getstate__(self):
+         return (self.name, self._detector, self._mot, self._steps)
+ 
+-    def read_configuration(self):
++    def read_configuration(self, dot=False):
+         return {}
+ 
+-    def describe_configuration(self):
++    def describe_configuration(self, dot=False):
+         return {}
+ 
+-    def describe_collect(self):
++    def describe_collect(self, dot=False):
+         dd = dict()
+-        dd.update(self._mot.describe())
+-        dd.update(self._detector.describe())
+-        return {self.name: dd}
++        dd.update(self._mot.describe(dot))
++        dd.update(self._detector.describe(dot))
++        return {self.vname(dot): dd}
+ 
+     def complete(self):
+         if self._completion_status is None:
+@@ -920,8 +920,8 @@ class SynSignalWithRegistry(SynSignal):
+     def read(self):
+         return self._result
+ 
+-    def describe(self):
+-        res = super().describe()
++    def describe(self, dot=False):
++        res = super().describe(dot)
+         for key in res:
+             res[key]['external'] = "FILESTORE"
+         return res
+@@ -987,8 +987,8 @@ class DetWithConf(Device):
+ 
+ class InvariantSignal(SynSignal):
+     # Always returns the same reading, including timestamp.
+-    def read(self):
+-        res = super().read()
++    def read(self, dot=False):
++        res = super().read(dot)
+         for k in res:
+             res[k]['timestamp'] = 0
+         return res
+@@ -1232,10 +1232,10 @@ class FakeEpicsSignal(SynSignal):
+             connected=True,
+         )
+ 
+-    def describe(self):
+-        desc = super().describe()
++    def describe(self, dot=False):
++        desc = super().describe(dot)
+         if self._enum_strs is not None:
+-            desc[self.name]['enum_strs'] = self.enum_strs
++            desc[self.vname(dot)]['enum_strs'] = self.enum_strs
+         return desc
+ 
+     def sim_set_putter(self, putter):

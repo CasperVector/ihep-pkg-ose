@@ -24,7 +24,7 @@ diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/controller.cmd epics-Keithle
 diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd epics-Keithley_648x/iocBoot/iock648x/st.cmd
 --- epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd	2019-03-07 00:09:38.000000000 +0800
 +++ epics-Keithley_648x/iocBoot/iock648x/st.cmd	2021-07-08 17:15:17.229388366 +0800
-@@ -1,51 +1,20 @@
+@@ -1,51 +1,21 @@
  #!../../bin/linux-x86_64/k648x
  
  < envPaths
@@ -79,6 +79,7 @@ diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd epics-Keithley_648x/i
  #traceIocInit
 -
  iocInit
++#dbpf k648x:CA1:read.SCAN ".5 second"
  
 diff -Nur epics-Keithley_648x.orig/k648xApp/src/Makefile epics-Keithley_648x/k648xApp/src/Makefile
 --- epics-Keithley_648x.orig/k648xApp/src/Makefile	2019-03-07 00:09:38.000000000 +0800

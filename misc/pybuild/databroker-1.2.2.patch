@@ -1,0 +1,51 @@
+diff -ur site-packages.orig/databroker/assets/handlers.py site-packages/databroker/assets/handlers.py
+--- site-packages.orig/databroker/assets/handlers.py	2020-08-27 21:44:42.000000000 +0800
++++ site-packages/databroker/assets/handlers.py	2021-04-06 01:54:41.710669746 +0800
+@@ -228,7 +228,7 @@
+ 
+     def __call__(self, point_number):
+         if self._dataset is not None:
+-            self._dataset.id.refresh()
++            self._dataset.refresh()
+         rtn = super(AreaDetectorHDF5SWMRHandler, self).__call__(
+             point_number)
+ 
+@@ -305,7 +305,7 @@
+ 
+     def __call__(self, point_number):
+         if (self._dataset1 is not None) and (self._dataset2 is not None):
+-            self._dataset.id.refresh()
++            self._dataset.refresh()
+         rtn = super(AreaDetectorHDF5SWMRTimestampHandler, self).__call__(
+             point_number)
+         return rtn
+@@ -348,7 +348,7 @@
+             raise RuntimeError("File is not open")
+ 
+         if self._swmr:
+-            self._dataset.id.refresh()
++            self._dataset.refresh()
+ 
+ 
+ class HDFMapsSpectrumHandler(_HdfMapsHandlerBase):
+diff -ur site-packages.orig/databroker/assets/sqlite.py site-packages/databroker/assets/sqlite.py
+--- site-packages.orig/databroker/assets/sqlite.py	2019-12-11 17:57:44.000000000 +0800
++++ site-packages/databroker/assets/sqlite.py	2020-04-08 02:20:07.000000000 +0800
+@@ -118,7 +118,7 @@
+             finished_event = threading.Event()
+             ret = {}
+             self._wq.put((finished_event, key, args, kwargs, ret))
+-            success = finished_event.wait(timeout=.1)
++            success = finished_event.wait(timeout=.4)
+             if not success:
+                 raise TimeoutError("{key} call timed out".format(key=key))
+             excp = ret.get('exception')
+@@ -152,7 +152,7 @@
+             finished_event = threading.Event()
+             ret = {}
+             self.__request_queue.put((finished_event, key, args, kwargs, ret))
+-            success = finished_event.wait(timeout=.1)
++            success = finished_event.wait(timeout=.4)
+             if not success:
+                 raise TimeoutError("{key} call timed out".format(key=key))
+             excp = ret.get('exception')

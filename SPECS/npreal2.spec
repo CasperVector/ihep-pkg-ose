@@ -1,6 +1,6 @@
 Name:           npreal2
 Version:        10.1
-Release:        2.el%{rhel}
+Release:        3.el%{rhel}
 Summary:        Moxa Linux Real TTY Driver
 
 License:        GPLv2
@@ -11,6 +11,9 @@ Source1:        %{name}-services.patch
 BuildRequires:  gcc, make, kernel-devel
 Requires:       gcc, make, kernel-devel
 Requires(pre):  shadow-utils
+%if %{rhel} == 8
+Requires:       elfutils-libelf-devel
+%endif
 
 %description
 

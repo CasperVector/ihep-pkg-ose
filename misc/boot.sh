@@ -107,10 +107,8 @@ src_get() {
 		done | awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
 		./misc/fetch.sh /tmp/fetch.txt
 		return; fi
-if [ "$ver" -eq 7 ]; then
 	wget -nc -P SOURCES "$mirror_docker"/docker-ce.repo \
 		"$mirror_qd"/qd.repo "$mirror_qd/$pubkey_qd"
-fi
 	[ -f SOURCES/"$pubkey_docker" ] ||
 		wget -O SOURCES/"$pubkey_docker" "$mirror_docker"/gpg
 	for f in $pkgs_boot; do
@@ -166,7 +164,7 @@ rpm_prune() {
 }
 
 build() {
-	while [ "$#" -ge 1 ]; do
+	while [ "$#" -gt 0 ]; do
 		spec_expand SPECS/"$1".spec
 		sudo yum-builddep -y --enablerepo=ihep /tmp/expanded.spec
 		(set +x; . /etc/profile; set -x;
@@ -201,8 +199,7 @@ pypi_get() {
 
 pypi_prep() {
 	inst misc/docker/pip.conf /etc
-	(cd /usr/lib64/python3."$py3rel"/distutils;
-		sudo ln -s /etc/pip.conf distutils.cfg)
+	sudo ln -s /etc/pip.conf /usr/lib64/python3."$py3rel"/distutils/distutils.cfg
 	sudo pip3 install ./pypi/pip-[0-9]*.whl
 	sudo pip3 install -U setuptools
 	sudo pip3 install build wheel
@@ -210,7 +207,7 @@ pypi_prep() {
 }
 
 pybuild() {
-	while [ "$#" -ge 1 ]; do
+	while [ "$#" -gt 0 ]; do
 		./misc/pybuild.sh "$1" do_build
 	shift; done; ./misc/dir2pi.py pypi
 }

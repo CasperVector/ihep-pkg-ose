@@ -1,0 +1,12 @@
+diff -ur ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd
+--- ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd	2022-05-18 06:45:59.000000000 +0800
++++ ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd	2022-08-17 23:10:18.974559585 +0800
+@@ -28,7 +28,7 @@
+ #asynSetTraceIOMask("camserver",0,2)
+ #asynSetTraceMask("camserver",0,9)
+ # Set the input and output terminators.
+-asynOctetSetInputEos("camserver", 0, "\0x18")
++asynOctetSetInputEos("camserver", 0, "\x18")
+ asynOctetSetOutputEos("camserver", 0, "\n")
+ 
+ pilatusDetectorConfig("$(PORT)", "camserver", $(XSIZE), $(YSIZE), 0, 0)
