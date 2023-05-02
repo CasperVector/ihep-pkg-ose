@@ -2,8 +2,7 @@
 %define commit R3-11
 %define etop_ad %{epics_root}/areaDetector
 %define opimask */arrayPlot.* edl/simTop.edl
-%include %{_specdir}/classes/unbloat.spec
-%{meta name license=MIT github=areaDetector version=commit,3}
+%{meta name license=MIT github=areaDetector version=commit,4}
 
 Summary:        EPICS - areaDetector base classes and standard plugins
 Patch0:         %{name}-3_11-bugs.patch
@@ -11,6 +10,7 @@ BuildRequires:  epics-ADSupport, epics-asyn, gcc-c++, make, libXext-devel
 Requires:       epics-ADSupport, epics-asyn, epics-autosave, epics-busy
 Requires:       epics-calc, epics-iocStats, epics-seq, epics-sscan, libXext
 
+%{inherit epics + global}
 %description
 
 %prep

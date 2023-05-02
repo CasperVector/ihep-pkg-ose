@@ -2,8 +2,8 @@
 
 _rm_extras() {
 	find "$1" '(' -name '*.orig' -o '(' \
-		-not '(' -name '*Support' -prune ')' -name '*.a' ')' \
-		')' -exec rm -f '{}' '+'
+		-not '(' '(' -name '*Support' -o -name '*Sup' ')' -prune ')' \
+	-name '*.a' ')' ')' -exec rm -f '{}' '+'
 	find "$1" '(' -name O.Common -o -name 'O.linux-*' ')' -exec rm -rf '{}' '+'
 }
 _file_list() {
@@ -55,6 +55,7 @@ _link_ops() {
 }
 _fix_arch() {
 	local arch; arch=$1; shift
+	if [ "$#" -eq 1 -a ! -f "$1" ]; then return; fi
 	sed -i "/^ARCH/ s/^/#/; /$arch\$/ s/^#ARCH/ARCH/" "$@"
 }
 

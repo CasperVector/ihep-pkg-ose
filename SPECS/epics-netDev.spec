@@ -1,6 +1,6 @@
 %define repo netDev
 %define commit 1.1.0
-%{meta name license=EPICS version=commit,3}
+%{meta name license=EPICS version=commit,4}
 
 Summary:        EPICS - Device and Driver Support for General Network Devices
 URL:            https://www-linac.kek.jp/cont/epics/netdev/
@@ -9,6 +9,7 @@ Patch0:         %{name}-1.1.0-epics7-app-libs-files.patch
 BuildRequires:  epics-autosave, epics-iocStats, gcc-c++, make
 Requires:       epics-autosave, epics-iocStats
 
+%{inherit synapps + global}
 %description
 
 %{inherit synapps - prep}

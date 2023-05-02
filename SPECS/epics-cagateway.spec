@@ -1,5 +1,5 @@
 %define repo ca-gateway
-%{meta license=EPICS version=2.1.3,3}
+%{meta license=EPICS version=2.1.3,4}
 
 Name:           epics-cagateway
 Summary:        EPICS - Channel Access PV Gateway
@@ -9,6 +9,7 @@ Patch0:         %{name}-2.1.2-killer.patch
 BuildRequires:  epics-base, epics-pcas, gcc-c++, make, perl
 Requires:       epics-base, epics-pcas
 
+%{inherit epics + global}
 %description
 
 %prep

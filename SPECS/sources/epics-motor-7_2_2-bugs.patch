@@ -1,25 +1,7 @@
-From 784e41927b942d38c31a766309668d6114861b9e Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Torsten=20B=C3=B6gershausen?= <torsten.bogershausen@esss.se>
-Date: Mon, 19 Apr 2021 14:19:12 +0200
-Subject: [PATCH] motordrvCom.h needs shareLib.h
-
-We can't compile motor against this commit of EPICS base:
-  commit 0f428ea3346d89719b03a6419319c85afb0fee13
-  Author: Michael Davidsaver <mdavidsaver@gmail.com>
-  Date:   Thu Apr 1 10:57:19 2021 -0700
-
-      use DBCORE_API
-
-Solution: Include <shareLib.h>
----
- motorApp/MotorSrc/motordrvCom.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/motorApp/MotorSrc/motordrvCom.h b/motorApp/MotorSrc/motordrvCom.h
-index 98e736af..4f701ffa 100644
---- a/motorApp/MotorSrc/motordrvCom.h
-+++ b/motorApp/MotorSrc/motordrvCom.h
-@@ -45,6 +45,7 @@ USAGE...	This file contains definitions and structures that
+diff -ur motor/motorApp/MotorSrc/motordrvCom.h motor/motorApp/MotorSrc/motordrvCom.h
+--- motor/motorApp/MotorSrc/motordrvCom.h	2021-02-03 02:19:45.000000000 +0800
++++ motor/motorApp/MotorSrc/motordrvCom.h	2023-04-14 19:43:22.491272387 +0800
+@@ -45,6 +45,7 @@
  #ifndef	INCmotordrvComh
  #define	INCmotordrvComh 1
  
@@ -27,3 +9,15 @@ index 98e736af..4f701ffa 100644
  #include <callback.h>
  #include <epicsTypes.h>
  #include <epicsEvent.h>
+diff -ur motor/motorApp/MotorSrc/motorRecord.cc motor/motorApp/MotorSrc/motorRecord.cc
+--- motor/motorApp/MotorSrc/motorRecord.cc	2021-02-03 02:19:45.000000000 +0800
++++ motor/motorApp/MotorSrc/motorRecord.cc	2023-04-14 19:44:19.831113351 +0800
+@@ -2410,7 +2410,7 @@
+                 }
+                 /* IF move is in preferred direction, AND, current position is within backlash range. */
+                 else if ((preferred_dir == true) &&
+-                         ((use_rel == true  && relbpos <= 1.0) ||
++                         ((use_rel == true  && ((pmr->bdst >= 0 && relbpos >= 1.0) || (pmr->bdst < 0 && relbpos <= -1.0))) ||
+                           (use_rel == false && (fabs(newpos - currpos) <= rbdst1))
+                          )
+                         )

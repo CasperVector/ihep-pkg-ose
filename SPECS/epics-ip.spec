@@ -1,6 +1,6 @@
 %define repo ip
 %define commit R2-21-1
-%{meta name license=EPICS github=epics-modules version=commit,3}
+%{meta name license=EPICS github=epics-modules version=commit,4}
 
 Summary:        EPICS - Misc devices dating back to Industry Pack cards
 Patch0:         %{name}-2_21_1-app-libs-files.patch
@@ -9,6 +9,7 @@ BuildRequires:  epics-iocStats, epics-ipac, epics-seq, gcc-c++, make
 Requires:       epics-asyn, epics-autosave, epics-calc
 Requires:       epics-iocStats, epics-ipac, epics-seq
 
+%{inherit synapps + global}
 %description
 
 %{inherit synapps - prep}

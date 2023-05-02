@@ -1,4 +1,4 @@
-%{meta license=EPICS version=3_1_17,2}
+%{meta license=EPICS version=3_1_17,3}
 
 Name:           epics-medm
 Summary:        EPICS - Motif Editor and Display Manager
@@ -15,6 +15,7 @@ Requires:       fontconfig, libjpeg, libpng, xorg-x11-fonts-Type1
 Requires:       xorg-x11-fonts-misc, xorg-x11-fonts-100dpi, xorg-x11-fonts-75dpi
 Requires:       xorg-x11-fonts-ISO8859-1-100dpi, xorg-x11-fonts-ISO8859-1-75dpi
 
+%{inherit epics + global}
 %description
 
 %prep

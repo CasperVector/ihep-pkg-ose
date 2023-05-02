@@ -1,0 +1,139 @@
+diff -Nur motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/motorsim.substitutions motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/motorsim.substitutions
+--- motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/motorsim.substitutions	1970-01-01 08:00:00.000000000 +0800
++++ motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/motorsim.substitutions	2023-04-05 15:20:22.857168602 +0800
+@@ -0,0 +1,69 @@
++file "$(MOTOR)/db/basic_asyn_motor.db"
++{
++pattern
++{P,     N,   M,        DTYP,         PORT,       ADDR,   DESC,          EGU,      DIR,  VELO,  VBAS,  ACCL,  BDST,  BVEL,  BACC,  MRES,  PREC,  DHLM,  DLLM,  INIT}
++{IOC:,  1,   "m$(N)",  "asynMotor",  motorSim1,  0,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  2,   "m$(N)",  "asynMotor",  motorSim1,  1,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  3,   "m$(N)",  "asynMotor",  motorSim1,  2,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  4,   "m$(N)",  "asynMotor",  motorSim1,  3,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  5,   "m$(N)",  "asynMotor",  motorSim1,  4,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  6,   "m$(N)",  "asynMotor",  motorSim1,  5,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  7,   "m$(N)",  "asynMotor",  motorSim1,  6,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  8,   "m$(N)",  "asynMotor",  motorSim1,  7,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  9,   "m$(N)",  "asynMotor",  motorSim1,  8,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  10,  "m$(N)",  "asynMotor",  motorSim1,  9,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  11,  "m$(N)",  "asynMotor",  motorSim1,  10,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  12,  "m$(N)",  "asynMotor",  motorSim1,  11,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  13,  "m$(N)",  "asynMotor",  motorSim1,  12,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  14,  "m$(N)",  "asynMotor",  motorSim1,  13,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  15,  "m$(N)",  "asynMotor",  motorSim1,  14,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  16,  "m$(N)",  "asynMotor",  motorSim1,  15,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  17,  "m$(N)",  "asynMotor",  motorSim2,  0,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  18,  "m$(N)",  "asynMotor",  motorSim2,  1,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  19,  "m$(N)",  "asynMotor",  motorSim2,  2,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  20,  "m$(N)",  "asynMotor",  motorSim2,  3,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  21,  "m$(N)",  "asynMotor",  motorSim2,  4,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  22,  "m$(N)",  "asynMotor",  motorSim2,  5,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  23,  "m$(N)",  "asynMotor",  motorSim2,  6,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  24,  "m$(N)",  "asynMotor",  motorSim2,  7,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  25,  "m$(N)",  "asynMotor",  motorSim2,  8,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  26,  "m$(N)",  "asynMotor",  motorSim2,  9,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  27,  "m$(N)",  "asynMotor",  motorSim2,  10,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  28,  "m$(N)",  "asynMotor",  motorSim2,  11,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  29,  "m$(N)",  "asynMotor",  motorSim2,  12,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  30,  "m$(N)",  "asynMotor",  motorSim2,  13,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  31,  "m$(N)",  "asynMotor",  motorSim2,  14,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  32,  "m$(N)",  "asynMotor",  motorSim2,  15,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  33,  "m$(N)",  "asynMotor",  motorSim3,  0,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  34,  "m$(N)",  "asynMotor",  motorSim3,  1,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  35,  "m$(N)",  "asynMotor",  motorSim3,  2,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  36,  "m$(N)",  "asynMotor",  motorSim3,  3,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  37,  "m$(N)",  "asynMotor",  motorSim3,  4,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  38,  "m$(N)",  "asynMotor",  motorSim3,  5,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  39,  "m$(N)",  "asynMotor",  motorSim3,  6,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  40,  "m$(N)",  "asynMotor",  motorSim3,  7,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  41,  "m$(N)",  "asynMotor",  motorSim3,  8,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  42,  "m$(N)",  "asynMotor",  motorSim3,  9,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  43,  "m$(N)",  "asynMotor",  motorSim3,  10,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  44,  "m$(N)",  "asynMotor",  motorSim3,  11,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  45,  "m$(N)",  "asynMotor",  motorSim3,  12,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  46,  "m$(N)",  "asynMotor",  motorSim3,  13,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  47,  "m$(N)",  "asynMotor",  motorSim3,  14,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  48,  "m$(N)",  "asynMotor",  motorSim3,  15,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  49,  "m$(N)",  "asynMotor",  motorSim4,  0,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  50,  "m$(N)",  "asynMotor",  motorSim4,  1,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  51,  "m$(N)",  "asynMotor",  motorSim4,  2,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  52,  "m$(N)",  "asynMotor",  motorSim4,  3,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  53,  "m$(N)",  "asynMotor",  motorSim4,  4,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  54,  "m$(N)",  "asynMotor",  motorSim4,  5,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  55,  "m$(N)",  "asynMotor",  motorSim4,  6,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  56,  "m$(N)",  "asynMotor",  motorSim4,  7,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  57,  "m$(N)",  "asynMotor",  motorSim4,  8,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  58,  "m$(N)",  "asynMotor",  motorSim4,  9,      "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  59,  "m$(N)",  "asynMotor",  motorSim4,  10,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  60,  "m$(N)",  "asynMotor",  motorSim4,  11,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  61,  "m$(N)",  "asynMotor",  motorSim4,  12,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  62,  "m$(N)",  "asynMotor",  motorSim4,  13,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  63,  "m$(N)",  "asynMotor",  motorSim4,  14,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++{IOC:,  64,  "m$(N)",  "asynMotor",  motorSim4,  15,     "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
++}
+diff -Nur motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/st.cmd motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/st.cmd
+--- motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/st.cmd	2020-05-13 06:03:11.000000000 +0800
++++ motorMotorSim-R1-1/iocs/motorSimIOC/iocBoot/iocMotorSim/st.cmd	2023-04-05 15:22:27.662026808 +0800
+@@ -3,22 +3,52 @@
+ < envPaths
+ 
+ cd "${TOP}"
+-
+-## Register all support components
+ dbLoadDatabase "dbd/motorSim.dbd"
+ motorSim_registerRecordDeviceDriver pdbbase
+ 
+ cd "${TOP}/iocBoot/${IOC}"
++motorSimCreate(0, 0, -32000, 32000, 0, 2, 16)
++drvAsynMotorConfigure("motorSim1", "motorSim", 0, 16)
++drvAsynMotorConfigure("motorSim2", "motorSim", 1, 16)
++
++motorSimCreateController("motorSim3", 16)
++motorSimConfigAxis("motorSim3", 0, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 1, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 2, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 3, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 4, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 5, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 6, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 7, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 8, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 9, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 10, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 11, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 12, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 13, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 14, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim3", 15, 20000, -20000, 0, 0)
++
++motorSimCreateController("motorSim4", 16)
++motorSimConfigAxis("motorSim4", 0, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 1, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 2, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 3, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 4, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 5, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 6, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 7, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 8, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 9, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 10, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 11, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 12, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 13, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 14, 20000, -20000, 0, 0)
++motorSimConfigAxis("motorSim4", 15, 20000, -20000, 0, 0)
+ 
+-
+-## motorUtil (allstop & alldone)
++dbLoadTemplate("motorsim.substitutions")
+ dbLoadRecords("$(MOTOR)/db/motorUtil.db", "P=motorSim:")
+-
+-##
+-
+ iocInit
+-
+-## motorUtil (allstop & alldone)
+ motorUtilInit("motorSim:")
+ 
+-# Boot complete

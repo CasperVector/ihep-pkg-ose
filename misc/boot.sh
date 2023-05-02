@@ -136,7 +136,7 @@ if [ "$ver" -eq 7 ]; then
 		/etc/yum.repos.d/epel.repo
 	inst SOURCES/qd.repo /etc/yum.repos.d
 	inst SOURCES/"$pubkey_qd" /etc/pki/rpm-gpg
-	sudo rpm --import /etc/pki/rpm-gpg/"$pubkey_qd"
+	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_qd")
 	sudo yum repolist
 else
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \

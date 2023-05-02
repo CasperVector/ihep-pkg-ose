@@ -4,7 +4,7 @@ import os
 import os.path
 import sys
 clsDir = "SPECS/classes"
-phases = ["global", "prep", "build", "install", "files"]
+phases = ["prep", "build", "install", "files"]
 
 try:
 	cls = sys.argv[1]

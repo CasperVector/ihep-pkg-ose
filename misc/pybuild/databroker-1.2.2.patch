@@ -36,7 +36,7 @@ diff -ur site-packages.orig/databroker/assets/sqlite.py site-packages/databroker
              ret = {}
              self._wq.put((finished_event, key, args, kwargs, ret))
 -            success = finished_event.wait(timeout=.1)
-+            success = finished_event.wait(timeout=.4)
++            success = finished_event.wait(timeout=2.0)
              if not success:
                  raise TimeoutError("{key} call timed out".format(key=key))
              excp = ret.get('exception')
@@ -45,7 +45,16 @@ diff -ur site-packages.orig/databroker/assets/sqlite.py site-packages/databroker
              ret = {}
              self.__request_queue.put((finished_event, key, args, kwargs, ret))
 -            success = finished_event.wait(timeout=.1)
-+            success = finished_event.wait(timeout=.4)
++            success = finished_event.wait(timeout=2.0)
              if not success:
                  raise TimeoutError("{key} call timed out".format(key=key))
              excp = ret.get('exception')
+@@ -195,7 +195,7 @@
+         while not self.__shutdown_event.is_set():
+             finished_event = None
+             try:
+-                item = self.__request_queue.get(timeout=0.5)
++                item = self.__request_queue.get(timeout=5.0)
+             except queue.Empty:
+                 # Check whether we are shutting down (and should therefore
+                 # terminate this loop) and then resume waiting on the

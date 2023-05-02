@@ -2,7 +2,7 @@
 %define commit R7-9
 %define cmd_flags CMD_CFLAGS='%{optflags} -Wno-error=format-security' \\\
 	CMD_CXXFLAGS='%{optflags} -Wno-error=format-security'
-%{meta name license=EPICS github=epics-modules version=commit,2}
+%{meta name license=EPICS github=epics-modules version=commit,3}
 
 Summary:        EPICS - Multi-channel analysers and multi-channel scalers
 Patch0:         %{name}-7_9-scaler.patch
@@ -11,6 +11,7 @@ BuildRequires:  epics-seq, epics-sscan, gcc-c++, make, libusbx-devel
 Requires:       epics-asyn, epics-autosave, epics-busy, epics-calc, epics-scaler
 Requires:       epics-seq, epics-sscan, libusbx
 
+%{inherit synapps + global}
 %description
 
 %{inherit synapps}

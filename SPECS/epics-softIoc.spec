@@ -1,4 +1,4 @@
-%{meta license=EPICS version=7.0.6.1,2}
+%{meta license=EPICS version=7.0.6.1,3}
 
 Name:           epics-softIoc
 Summary:        EPICS - softIoc extended with useful supports
@@ -8,6 +8,7 @@ Patch0:         %{name}-7.0.6.1-app-libs.patch
 BuildRequires:  epics-iocStats, gcc-c++, make, perl
 Requires:       epics-iocStats
 
+%{inherit epics + global}
 %description
 
 %prep
