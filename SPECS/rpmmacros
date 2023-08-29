@@ -25,15 +25,17 @@
 %github_archive_ver() https://github.com/%1/%2/archive/%4%3/%2-%3.tar.gz
 %meta() %{expand:%(%{_specdir}/fn-meta.py %*)}
 %inherit() %{expand:%(%{_specdir}/fn-inherit.py %*)}
+%eval() %{expand:%(%{_specdir}/fn-eval.sh %*)}
 
 %_synapps_prep \
 	. %{_specdir}/fn-build.sh; _mv_commit %{repo} %{commit} \
 	_mv_build %{repo} %{epics_root}/%{repo}; cd %{epics_root} \
-	make release THIS_MODULE='$(SUPPORT)/%{repo}' MODULE_LIST=THIS_MODULE \
+	make release MOD_='$(SUPPORT)/%{repo}' MODULE_LIST=MOD_ \
 	cd %{repo}; %_my_patch \
 %{nil}
 %_moreapps_prep \
-	. %{_specdir}/fn-build.sh; _mv_commit %{repo} %{commit}; cd %{repo} \
+	. %{_specdir}/fn-build.sh; _mv_commit %{repo} %{commit} \
+	_mv_build %{repo} %{epics_root}/%{repo}; cd %{epics_root}/%{repo} \
 	rm -rf configure; cp -r %{epics_root}/utils/configure .; %_my_patch \
 %{nil}
 %_synapps_install \

@@ -1,0 +1,13 @@
+diff -ur iocStats-3.1.16/testIocStatsApp/src/Makefile iocStats-3.1.16/testIocStatsApp/src/Makefile
+--- iocStats-3.1.16/testIocStatsApp/src/Makefile	2019-05-01 04:28:55.000000000 +0800
++++ iocStats-3.1.16/testIocStatsApp/src/Makefile	2023-06-12 23:53:33.066128694 +0800
+@@ -14,7 +14,8 @@
+ 
+ #=============================
+ 
+-ifdef SNCSEQ
++#ifdef SNCSEQ
++ifeq (0,1)
+ 	PROD_IOC += testIocStats
+ 
+ 	testIocStats_SRCS += testIocStats_registerRecordDeviceDriver.cpp

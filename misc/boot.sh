@@ -128,8 +128,7 @@ fi
 	yyum --enablerepo=extras wget epel-release
 	inst SOURCES/docker-ce.repo /etc/yum.repos.d
 	inst SOURCES/"$pubkey_docker" /etc/pki/rpm-gpg
-	(cd /etc/pki/rpm-gpg;
-		sudo rpm --import "$pubkey_epel" "$pubkey_docker")
+	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_epel" "$pubkey_docker")
 if [ "$ver" -eq 7 ]; then
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
 		-e "s@http://download\\.fedoraproject\\.org/pub/epel/@$mirror/epel/@" \

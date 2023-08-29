@@ -22,7 +22,5 @@ Requires:       epics-asyn, epics-autosave, epics-iocStats, boost
 %_moreapps_prep
 chmod 0755 iocBoot/iocNodave/st.cmd
 cp %{epics_root}/utils/appMain.c s7nodaveApp/src/s7nodaveMain.cpp
-%_iocboot_makefiles iocBoot; cd ..
-_mv_build %{repo} %{epics_root}/%{repo}
-cd %{epics_root}/%{repo}/iocBoot; make %{?_smp_mflags}
+%_iocboot_makefiles iocBoot; cd iocBoot; make %{?_smp_mflags}
 

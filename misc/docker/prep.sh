@@ -1,8 +1,7 @@
 #!/bin/sh -xe
 
 mirror='https://mirrors.bangmod.cloud'
-ver="$(sed -n 's/.*_PRODUCT_VERSION=//p' /etc/os-release |
-	sed 1q | tr -cd 0-9. | sed 's/\..*//')"
+ver="$(sed -n 's/^VERSION_ID=//p' /etc/os-release | tr -d \" | sed 's/\..*//')"
 chmod 0644 /etc/yum.repos.d/ihep.repo; chmod 0755 /init.sh
 case "$ver" in
 7)

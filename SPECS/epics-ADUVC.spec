@@ -1,6 +1,6 @@
 %define repo ADUVC
 %define commit 0aa7bbfe
-%{meta name license=XFree86 github=areaDetector version=commit,3}
+%{meta name license=XFree86 github=areaDetector version=commit,4}
 
 Summary:        EPICS - USB Video Class (UVC) devices
 Patch0:         %{name}-0aa7bbfe-config.patch

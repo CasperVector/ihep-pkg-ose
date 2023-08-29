@@ -1,0 +1,26 @@
+diff -ur StreamDevice-2.8.16/src/devmbbiStream.c StreamDevice-2.8.16/src/devmbbiStream.c
+--- StreamDevice-2.8.16/src/devmbbiStream.c	2020-08-18 20:46:16.000000000 +0800
++++ StreamDevice-2.8.16/src/devmbbiStream.c	2023-06-01 23:01:38.000000000 +0800
+@@ -36,13 +36,17 @@
+         {
+             if (streamScanf(record, format, &val) == ERROR) return ERROR;
+             /* read VAL or RBV? Look if any value is defined */
+-            if (mbbi->sdef) for (i=0; i<16; i++)
++            if (mbbi->sdef)
+             {
+-                if ((&mbbi->zrvl)[i])
++                unsigned long val1 = val;
++                if (mbbi->mask) val1 &= mbbi->mask;
++                for (i=0; i<16; i++)
+                 {
+-                    if (mbbi->mask) val &= mbbi->mask;
+-                    mbbi->rval = (epicsEnum16)val;
+-                    return OK;
++                    if ((&mbbi->zrvl)[i] && (&mbbi->zrvl)[i] == val1)
++                    {
++                        mbbi->val = i;
++                        return DO_NOT_CONVERT;
++                    }
+                 }
+             }
+             mbbi->val = (epicsEnum16)val;

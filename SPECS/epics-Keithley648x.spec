@@ -12,5 +12,8 @@ Obsoletes:      epics-Keithley_648x
 %description
 
 %{inherit synapps - prep}
-%{inherit moreapps + prep}
+
+%prep
+%setup -c -n %{name}
+%_moreapps_prep
 

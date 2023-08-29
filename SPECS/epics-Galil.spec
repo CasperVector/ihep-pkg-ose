@@ -23,6 +23,6 @@ _mv_commit %{repo} %{repotail}-%{commit}; cd %{repo}
 mv %{commit}/* %{commit}/.ci-local .; rmdir %{commit}
 cp config/GALILRELEASE configure/RELEASE.local; cd -
 _mv_build %{repo} %{epics_root}/%{repo}; cd %{epics_root}
-make release THIS_MODULE='$(SUPPORT)/%{repo}' MODULE_LIST=THIS_MODULE
+make release MOD_='$(SUPPORT)/%{repo}' MODULE_LIST=MOD_
 cd %{repo}; %_my_patch
 

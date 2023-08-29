@@ -19,7 +19,5 @@ Requires:       epics-autosave, epics-iocStats
 %_moreapps_prep
 chmod 0755 iocBoot/iocNetDev/st.cmd
 cp %{epics_root}/utils/appMain.c src/netDevMain.cpp
-%_iocboot_makefiles iocBoot; cd ..
-_mv_build %{repo} %{epics_root}/%{repo}
-cd %{epics_root}/%{repo}/iocBoot; make %{?_smp_mflags}
+%_iocboot_makefiles iocBoot; cd iocBoot; make %{?_smp_mflags}
 
