@@ -1,0 +1,90 @@
+diff -ur dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp
+--- dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2019-08-10 05:54:39.000000000 +0800
++++ dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2023-11-03 18:41:06.774136110 +0800
+@@ -123,7 +123,7 @@
+     uniqueId(0)
+ {
+     int status = asynSuccess;
+-    int i;
++    int i, bins[2];
+     int sca;
+     char tmpStr[100];
+     unsigned short tempUS;
+@@ -271,10 +271,6 @@
+ 
+     /* Allocate a memory pointer for each of the channels */
+     this->pMcaRaw = (epicsUInt32**) calloc(this->nChannels, sizeof(epicsUInt32*));
+-    /* Allocate a memory area for each spectrum */
+-    for (i=0; i<this->nChannels; i++) {
+-        this->pMcaRaw[i] = (epicsUInt32*)calloc(MAX_MCA_BINS, sizeof(epicsUInt32));
+-    }
+     
+     this->tmpStats = (epicsFloat64*)calloc(28, sizeof(epicsFloat64));
+     this->currentBuf = (epicsUInt32*)calloc(this->nChannels, sizeof(epicsUInt32));
+@@ -350,6 +346,14 @@
+     xiastatus = xiaBoardOperation(0, "get_firmware_version", &tmpStr);
+     setStringParam(NDDxpFirmwareVersion, tmpStr);
+     
++    bins[1] = 0;
++    for (i=0; i<this->nChannels; i++) {
++        getIntegerParam(i, mcaNumChannels, bins);
++        if (bins[1] < bins[0]) bins[1] = bins[0];
++    }
++    for (i=0; i<this->nChannels; i++) {
++        this->pMcaRaw[i] = (epicsUInt32*)this->pMapRaw + i * bins[1];
++    }
+     
+     // Enable array callbacks by default
+     setIntegerParam(NDArrayCallbacks, 1);
+@@ -873,6 +877,9 @@
+     }
+     
+     /* We also need to set the number of channels for the DXP_ALL channel, it is used in mcaErase */
++    for (i=0; i<this->nChannels; i++) {
++        this->pMcaRaw[i] = (epicsUInt32*)this->pMapRaw + i * (*rbValue);
++    }
+     setIntegerParam(this->nChannels, mcaNumChannels, *rbValue);
+     callParamCallbacks(this->nChannels);
+ 
+@@ -1350,7 +1357,7 @@
+     int nChannels;
+     int channel=addr;
+     int i;
+-    //NDArray *pArray;
++    NDArray *pArray;
+     NDDataType_t dataType;
+     epicsTimeStamp now;
+     const char* functionName = "getMcaData";
+@@ -1371,6 +1378,14 @@
+             /* Call ourselves recursively but with a specific channel */
+             this->getMcaData(pasynUser, i);
+         }
++        if (arrayCallbacks)
++        {
++            size_t dims[2]; dims[0] = nChannels; dims[1] = this->nChannels;
++            pArray = this->pNDArrayPool->alloc(2, dims, NDUInt32, 0, NULL);
++            memcpy(pArray->pData, this->pMapRaw, dims[1] * dims[0] * sizeof(epicsUInt32));
++            doCallbacksGenericPointer(pArray, NDArrayData, 0);
++            pArray->release();
++        }
+     } else {
+         /* Read the MCA spectrum from Handel.
+         * For most devices this means getting 1 channel spectrum here.
+@@ -1380,17 +1395,6 @@
+             "%s::%s Got MCA spectrum channel:%d ptr:%p\n",
+             driverName, functionName, channel, pMcaRaw[addr]);
+ 
+-// In the future we may want to do array callbacks with the MCA data.  For now we are not doing this.
+-//        if (arrayCallbacks)
+-//       {
+-//            /* Allocate a buffer for callback */
+-//            pArray = this->pNDArrayPool->alloc(1, &nChannels, dataType, 0, NULL);
+-//            pArray->timeStamp = now.secPastEpoch + now.nsec / 1.e9;
+-//            pArray->uniqueId = spectrumCounter;
+-//            /* TODO: Need to copy the data here */
+-//            doCallbacksGenericPointer(pArray, NDArrayData, addr);
+-//            pArray->release();
+-//       }
+     }
+     asynPrint(pasynUser, ASYN_TRACE_FLOW, 
+         "%s:%s: exit\n",

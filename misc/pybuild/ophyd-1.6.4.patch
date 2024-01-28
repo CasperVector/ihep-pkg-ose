@@ -2,6 +2,20 @@ diff --git a/ophyd/areadetector/filestore_mixins.py b/ophyd/areadetector/filesto
 index e4982e8..112008b 100644
 --- a/ophyd/areadetector/filestore_mixins.py
 +++ b/ophyd/areadetector/filestore_mixins.py
+@@ -284,7 +284,12 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
+                     ('root: {!r} in not consistent with '
+                      'read_path_template: {!r}').format(rootp, ret))
+ 
+-        return str(ret)
++        ret, sep = str(ret), "/\\"
++        if not any(ret.endswith(s) for s in sep):
++            for s in sep:
++                if s in ret:
++                    ret += s
++        return ret
+ 
+     @write_path_template.setter
+     def write_path_template(self, val):
 @@ -356,20 +356,17 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
          self._datum_uids[key].append(reading)
          return datum_id
@@ -348,7 +362,7 @@ index 1940fce..dd4a14a 100644
          self.set_use_switch.put(1, wait=True)
          try:
 -            self.user_setpoint.put(pos, wait=True, force=True)
-+            self.setpoint.put(pos, wait=True, force=True)
++            self.setpoint.put(pos, wait=False, force=True)
          finally:
              self.set_use_switch.put(0, wait=True)
  

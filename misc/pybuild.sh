@@ -3,6 +3,7 @@
 toppath="$PWD"
 buildpath="$toppath"/BUILD
 pybuild="$toppath"/misc/pybuild
+sysver="$(rpmspec -E '%{rhel}')"
 
 src_pypi() {
 	local f g
@@ -37,7 +38,7 @@ do_unpack() {
 
 do_prepare() {
 	local f; for f in $patches; do
-		cat "$pybuild/$f" | patch -p1; done
+		patch -p1 < "$pybuild/$f"; done
 }
 
 do_compile() {

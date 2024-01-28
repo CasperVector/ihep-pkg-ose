@@ -1,0 +1,105 @@
+diff -ur dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp
+--- dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2019-08-10 05:54:39.000000000 +0800
++++ dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2022-03-19 17:59:44.267989723 +0800
+@@ -1108,7 +1108,7 @@
+     int ivalue;
+     int channel=addr;
+     int erased;
+-    int i;
++    int i, module = 0;
+     const char *functionName = "getAcquisitionStatistics";
+ 
+     if (addr == this->nChannels) channel = DXP_ALL;
+@@ -1164,8 +1164,9 @@
+         } else {
+             /* We only read the module statistics data if this is the first channel in a module.
+              * This assumes we are reading in numerical order, else we may get stale data! */
+-            if ((channel % this->channelsPerModule[0]) == 0) getModuleStatistics(pasynUser, channel, &moduleStats[0]);
+-            stats = &moduleStats[channel % this->channelsPerModule[0]];
++            while (channel >= this->firstChanOnModule[module + 1]) module++;
++            if (channel == this->firstChanOnModule[module]) getModuleStatistics(pasynUser, channel, &moduleStats[0]);
++            stats = &moduleStats[channel - this->firstChanOnModule[module]];
+             setIntegerParam(addr, NDDxpTriggers, (int)stats->triggers);
+             setIntegerParam(addr, NDDxpEvents, (int)stats->events);
+             setDoubleParam(addr, mcaElapsedRealTime, stats->realTime);
+@@ -1865,20 +1866,19 @@
+ void NDDxp::getModuleInfo()
+ {
+     char module_alias[MAXALIAS_LEN];
+-    char module_type[MAXITEM_LEN];
+-    unsigned int numDetectors;
+-    int status = 0;
++    int nModChan, status = 0;
++    unsigned int i;
+ 
+-    /* Get the number of detectors */
+-    xiaGetNumDetectors(&numDetectors);
+     xiaGetNumModules(&this->numModules);
+-    /* Get the module alias for the first channel */
+-    status |= xiaGetModules_VB(0, module_alias);
+-    /* Get the module type for this module */
+-    status |= xiaGetModuleItem(module_alias, "module_type", module_type);
+-    /* Get the number of channels for this module */
+-    this->channelsPerModule = (int *)malloc(this->numModules * sizeof(int));
+-    status |= xiaGetModuleItem(module_alias, "number_of_channels", &this->channelsPerModule[0]);
++    this->firstChanOnModule = (int *)calloc(this->numModules + 1, sizeof(int));
++    for (i = 0; i < this->numModules; i++)
++    {
++        /* Get the module alias for the first channel */
++        status |= xiaGetModules_VB(i, module_alias);
++        /* Get the number of channels for this module */
++        status |= xiaGetModuleItem(module_alias, "number_of_channels", &nModChan);
++        this->firstChanOnModule[i + 1] = this->firstChanOnModule[i] + nModChan;
++    }
+ }
+ 
+ static const iocshArg NDDxpConfigArg0 = {"Asyn port name", iocshArgString};
+diff -ur dxpSITORO-R1-2/dxpApp/src/NDDxp.h dxpSITORO-R1-2/dxpApp/src/NDDxp.h
+--- dxpSITORO-R1-2/dxpApp/src/NDDxp.h	2019-08-10 05:54:39.000000000 +0800
++++ dxpSITORO-R1-2/dxpApp/src/NDDxp.h	2022-03-19 17:39:35.691273680 +0800
+@@ -6,7 +6,8 @@
+ 
+ #include <asynNDArrayDriver.h>
+ 
+-#define MAX_CHANNELS_PER_SYSTEM    8
++#define MAX_TOTAL_CHANNELS       100
++#define DXP_MAX_CHANNELS           8
+ #define DXP_MAX_SCAS              24
+ #define MAX_ATTR_NAME_LEN        256
+ 
+@@ -287,7 +288,6 @@
+ 
+     int nChannels;
+     unsigned int numModules;
+-    int *channelsPerModule;
+     int *firstChanOnModule;
+     int maxSCAs;
+ 
+@@ -301,18 +301,18 @@
+     epicsFloat64 *traceTimeBuffer;
+     epicsFloat64 *spectrumXAxisBuffer;
+     
+-    moduleStatistics moduleStats[MAX_CHANNELS_PER_SYSTEM];
++    moduleStatistics moduleStats[DXP_MAX_CHANNELS];
+ 
+     bool polling;
+     int uniqueId;
+-    char attrRealTimeName           [MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
+-    char attrRealTimeDescription    [MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
+-    char attrLiveTimeName           [MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
+-    char attrLiveTimeDescription    [MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
+-    char attrTriggersName           [MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
+-    char attrTriggersDescription    [MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
+-    char attrOutputCountsName       [MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
+-    char attrOutputCountsDescription[MAX_CHANNELS_PER_SYSTEM][MAX_ATTR_NAME_LEN];
++    char attrRealTimeName           [MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
++    char attrRealTimeDescription    [MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
++    char attrLiveTimeName           [MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
++    char attrLiveTimeDescription    [MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
++    char attrTriggersName           [MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
++    char attrTriggersDescription    [MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
++    char attrOutputCountsName       [MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
++    char attrOutputCountsDescription[MAX_TOTAL_CHANNELS][MAX_ATTR_NAME_LEN];
+  
+ };
+ 
