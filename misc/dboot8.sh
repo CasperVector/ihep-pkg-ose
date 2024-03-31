@@ -26,12 +26,15 @@ base)
 	$build -t "$istem.$image" --build-arg parent="$parent" \
 		--build-arg ver="$ver" --build-arg uid="$(id -u)" "$ddir";;
 *)
-	pkgs="$(cat "$ddir"/pkgs."$image")"
-	rm -rf "$rpms/$arch/link" "$drpms"
-	$run --rm $it "$istem".base pkg_link $pkgs
-	mkdir "$drpms"
-	cp "$ddir"/pkgs."$image" "$drpms"/pkgs
-	mv "$rpms/$arch/link" "$drpms/$arch"
+	pkgs="$(cat "$ddir"/rpms."$image")"
+	pypis="$(cat "$ddir"/pypis."$image")"
+	rm -rf "$rpms/rpms" "$rpms/pypi" "$drpms"; mkdir "$drpms"
+	$run --rm $it "$istem".base rpm_link $pkgs';' pypi_link $pypis
+	cp "$ddir"/rpms."$image" "$drpms"/rpms
+	cp "$ddir"/pypis."$image" "$drpms"/pypis
+	cp misc/dir2pi.py "$drpms"
+	mv "$rpms/rpms" "$drpms/$arch"
+	mv "$rpms/pypi" "$drpms"/pypi
 	$build -t "$istem.$image" -f "$ddir"/Dockerfile.pkgs \
 		--build-arg parent="$istem".base "$ddir"
 	rm -rf "$drpms";;

@@ -1,2 +1,2 @@
-%files -f %{_builddir}/%{name}/epics.lst
+%files -f epics.lst
 

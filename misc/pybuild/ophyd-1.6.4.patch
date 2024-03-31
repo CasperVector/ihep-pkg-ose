@@ -1,8 +1,8 @@
 diff --git a/ophyd/areadetector/filestore_mixins.py b/ophyd/areadetector/filestore_mixins.py
-index e4982e8..112008b 100644
+index e4982e8..cedbea0 100644
 --- a/ophyd/areadetector/filestore_mixins.py
 +++ b/ophyd/areadetector/filestore_mixins.py
-@@ -284,7 +284,12 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
+@@ -285,7 +285,12 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
                      ('root: {!r} in not consistent with '
                       'read_path_template: {!r}').format(rootp, ret))
  
@@ -16,7 +16,7 @@ index e4982e8..112008b 100644
  
      @write_path_template.setter
      def write_path_template(self, val):
-@@ -356,20 +356,17 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
+@@ -356,20 +361,17 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
          self._datum_uids[key].append(reading)
          return datum_id
  
@@ -43,7 +43,7 @@ index e4982e8..112008b 100644
              res[k] = v[-1]
          return res
 diff --git a/ophyd/areadetector/plugins.py b/ophyd/areadetector/plugins.py
-index 6b50e2f..2515793 100644
+index 6b50e2f..707ffaa 100644
 --- a/ophyd/areadetector/plugins.py
 +++ b/ophyd/areadetector/plugins.py
 @@ -109,9 +109,12 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
@@ -68,11 +68,11 @@ index 6b50e2f..2515793 100644
  
 -    def read_configuration(self):
 -        ret = super().read_configuration()
-+    def read_configuration(self, dot=False):
-+        ret = super().read_configuration(dot)
++    def read_configuration(self, dot=False, fast=False):
++        ret = super().read_configuration(dot, fast)
  
 -        ret.update(self.source_plugin.read_configuration())
-+        ret.update(self.source_plugin.read_configuration(dot))
++        ret.update(self.source_plugin.read_configuration(dot, fast))
  
          return ret
  
@@ -132,7 +132,7 @@ index 830abe3..2f3a554 100644
  
      def stage(self):
 diff --git a/ophyd/device.py b/ophyd/device.py
-index b2e3ec0..0a20499 100644
+index b2e3ec0..16c0d56 100644
 --- a/ophyd/device.py
 +++ b/ophyd/device.py
 @@ -23,7 +23,7 @@ from typing import Dict, List, Any, TypeVar, Tuple
@@ -171,7 +171,16 @@ index b2e3ec0..0a20499 100644
                  self.log.debug("Setting %s to %r (original value: %r)",
                                 self.name,
                                 val, original_vals[sig])
-@@ -1230,14 +1232,15 @@ class Device(BlueskyInterface, OphydObject):
+@@ -703,6 +705,8 @@ class Device(BlueskyInterface, OphydObject):
+     # connect before returning control to the user
+     lazy_wait_for_connection = True
+ 
++    _config_cache = None
++
+     def __init__(self, prefix='', *, name, kind=None, read_attrs=None,
+                  configuration_attrs=None, parent=None, **kwargs):
+         self._destroyed = False
+@@ -1230,33 +1234,38 @@ class Device(BlueskyInterface, OphydObject):
          return sig
  
      @doc_annotation_forwarder(BlueskyInterface)
@@ -186,18 +195,24 @@ index b2e3ec0..0a20499 100644
          return res
  
 -    def read_configuration(self) -> OrderedDictType[str, Dict[str, Any]]:
-+    def read_configuration(self, dot=False) \
++    def read_configuration(self, dot=False, fast=False) \
 +        -> OrderedDictType[str, Dict[str, Any]]:
          """Dictionary mapping names to value dicts with keys: value, timestamp
  
          To control which fields are included, change the Component kinds on the
-@@ -1246,17 +1249,18 @@ class Device(BlueskyInterface, OphydObject):
+         device, or modify the ``configuration_attrs`` list.
+         """
++        if fast and self._config_cache is not None:
++            return self._config_cache[int(not dot)].copy()
          res = OrderedDict()
- 
+-
          for _, component in self._get_components_of_kind(Kind.config):
 -            res.update(component.read_configuration())
-+            res.update(component.read_configuration(dot))
-         return res
+-        return res
++            res.update(component.read_configuration(True, False))
++        self._config_cache = res, \
++            OrderedDict((k.replace(".", "_"), res[k]) for k in res)
++        return self._config_cache[int(not dot)].copy()
  
      @doc_annotation_forwarder(BlueskyInterface)
 -    def describe(self):
@@ -215,7 +230,7 @@ index b2e3ec0..0a20499 100644
          """Provide schema & meta-data for :meth:`~BlueskyInterface.read_configuration`
  
          This keys in the `OrderedDict` this method returns must match the
-@@ -1273,7 +1277,7 @@ class Device(BlueskyInterface, OphydObject):
+@@ -1273,7 +1282,7 @@ class Device(BlueskyInterface, OphydObject):
          """
          res = OrderedDict()
          for _, component in self._get_components_of_kind(Kind.config):
@@ -224,35 +239,58 @@ index b2e3ec0..0a20499 100644
          return res
  
      @property
-@@ -1393,8 +1397,8 @@ class Device(BlueskyInterface, OphydObject):
+@@ -1393,8 +1402,8 @@ class Device(BlueskyInterface, OphydObject):
          '''
          return cls._device_tuple
  
 -    def configure(self,
 -                  d: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-+    def configure(self, d: Dict[str, Any], action: bool = False) \
-+        -> Tuple[Dict[str, Any], Dict[str, Any]]:
++    def configure(self, d: Dict[str, Any], action: bool = False,
++                  fast: bool = False) -> Tuple[Dict[str, Any], Dict[str, Any]]:
          '''Configure the device for something during a run
  
          This default implementation allows the user to change any of the
-@@ -1414,7 +1418,7 @@ class Device(BlueskyInterface, OphydObject):
+@@ -1412,18 +1421,30 @@ class Device(BlueskyInterface, OphydObject):
+         (old, new) tuple of dictionaries
+         Where old and new are pre- and post-configure configuration states.
          '''
-         old = self.read_configuration()
+-        old = self.read_configuration()
++        old = self.read_configuration(dot = True, fast = fast)
++        if fast:
++            new = old.copy()
++        old = OrderedDict((k.replace(".", "_"), old[k]) for k in old)
          for key, val in d.items():
 -            if key not in self.configuration_attrs:
-+            if key not in self.configuration_attrs and not action:
++            try:
++                sig = getattr(self, key)
++            except:
                  # a little extra checking for a more specific error msg
-                 if key not in self.component_names:
-                     raise ValueError("There is no signal named %s" % key)
-@@ -1422,7 +1426,7 @@ class Device(BlueskyInterface, OphydObject):
-                     raise ValueError("%s is not one of the "
-                                      "configuration_fields, so it cannot be "
-                                      "changed using configure" % key)
+-                if key not in self.component_names:
+-                    raise ValueError("There is no signal named %s" % key)
+-                else:
+-                    raise ValueError("%s is not one of the "
+-                                     "configuration_fields, so it cannot be "
+-                                     "changed using configure" % key)
 -            set_and_wait(getattr(self, key), val)
-+            getattr(self, key).set(val, timeout=10).wait()
-         new = self.read_configuration()
+-        new = self.read_configuration()
++                raise ValueError("There is no signal named %s" % key)
++            if key not in self.configuration_attrs and not action:
++                raise ValueError("%s is not one of the "
++                                 "configuration_fields, so it cannot be "
++                                 "changed using configure" % key)
++            sig.set(val, timeout=10).wait()
++            if fast and key in new:
++                new[key] = new[key].copy()
++                new[key]["value"] = val
++        if fast:
++            self._config_cache = new, \
++                OrderedDict((k.replace(".", "_"), new[k]) for k in new)
++            new = self._config_cache[1].copy()
++        else:
++            new = self.read_configuration()
          return old, new
  
+     def _repr_info(self):
 diff --git a/ophyd/docs/utils.py b/ophyd/docs/utils.py
 index 58cf98c..50107d4 100644
 --- a/ophyd/docs/utils.py
@@ -266,7 +304,7 @@ index 58cf98c..50107d4 100644
      'event_types',
      # 'hints',
 diff --git a/ophyd/epics_motor.py b/ophyd/epics_motor.py
-index 1940fce..dd4a14a 100644
+index 1940fce..620c064 100644
 --- a/ophyd/epics_motor.py
 +++ b/ophyd/epics_motor.py
 @@ -42,12 +42,12 @@ class EpicsMotor(Device, PositionerBase):
@@ -546,7 +584,7 @@ index 4f1cf69..fb64b9c 100644
      def attr_name(self):
          return self._attr_name
 diff --git a/ophyd/positioner.py b/ophyd/positioner.py
-index 0929734..9cb8498 100644
+index 0929734..5e4fbc1 100644
 --- a/ophyd/positioner.py
 +++ b/ophyd/positioner.py
 @@ -370,13 +370,13 @@ class SoftPositioner(PositionerBase):
@@ -589,7 +627,7 @@ index 0929734..9cb8498 100644
          return desc
  
 -    def read_configuration(self):
-+    def read_configuration(self, dot=False):
++    def read_configuration(self, dot=False, fast=False):
          return OrderedDict()
  
 -    def describe_configuration(self):
@@ -618,7 +656,7 @@ index 7d47e38..0da3c56 100644
              d['lower_ctrl_limit'] = low_limit
              d['units'] = self.egu
 diff --git a/ophyd/signal.py b/ophyd/signal.py
-index 632cee9..1e7e10e 100644
+index 632cee9..56b260e 100644
 --- a/ophyd/signal.py
 +++ b/ophyd/signal.py
 @@ -88,7 +88,7 @@ class Signal(OphydObject):
@@ -667,7 +705,7 @@ index 632cee9..1e7e10e 100644
              raise ValueError(f"failed to describe '{self.name}' with value '{val}'") from ve
  
 -    def read_configuration(self):
-+    def read_configuration(self, dot=False):
++    def read_configuration(self, dot=False, fast=False):
          'Dictionary mapping names to value dicts with keys: value, timestamp'
 -        return self.read()
 +        return self.read(dot)
@@ -741,7 +779,7 @@ index 632cee9..1e7e10e 100644
  
  class ArrayAttributeSignal(AttributeSignal):
 diff --git a/ophyd/sim.py b/ophyd/sim.py
-index 544685e..fbc908a 100644
+index 544685e..1934938 100644
 --- a/ophyd/sim.py
 +++ b/ophyd/sim.py
 @@ -78,9 +78,9 @@ class EnumSignal(Signal):
@@ -811,7 +849,7 @@ index 544685e..fbc908a 100644
          return {'stream_name': {}}
  
 -    def read_configuration(self):
-+    def read_configuration(self, dot=False):
++    def read_configuration(self, dot=False, fast=False):
          return OrderedDict()
  
 -    def describe_configuration(self):
@@ -824,7 +862,7 @@ index 544685e..fbc908a 100644
          return (self.name, self._detector, self._mot, self._steps)
  
 -    def read_configuration(self):
-+    def read_configuration(self, dot=False):
++    def read_configuration(self, dot=False, fast=False):
          return {}
  
 -    def describe_configuration(self):

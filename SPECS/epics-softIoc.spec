@@ -1,4 +1,4 @@
-%{meta license=EPICS version=7.0.6.1,3}
+%{meta license=EPICS version=7.0.6.1,4}
 
 Name:           epics-softIoc
 Summary:        EPICS - softIoc extended with useful supports

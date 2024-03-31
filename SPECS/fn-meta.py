@@ -16,7 +16,7 @@ def github(proj):
 		"Source0: %%{github_archive %s %%{repo} %%{commit}}\n" % proj
 
 def version(ver, rel):
-	ret = "Version: %s\n" % ("%(echo %{commit} | sed 's/^R//; s/-/_/g')\n"
+	ret = "Version: %s\n" % ("%(echo %{commit} | sed 's/^[Rv]//; s/-/_/g')\n"
 		if ver == "commit" else ver)
 	ret += "Release: %s.el%%{rhel}\n" % re.sub(r"\.(commit)$", r".%{\1}", rel)
 	return ret

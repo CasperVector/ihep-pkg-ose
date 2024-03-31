@@ -3,7 +3,7 @@
 ver="$(rpmspec -E '%{rhel}')"
 
 vcat() {
-	cd "$1"; cat "$2" "$2.$ver"
+	cd "$1"; cat "$2" "$2.$ver" | sed 's/#.*//'
 }
 
 # Hacky, but `--recursive' seems to `--resolve' only once at least on CentOS 7.
@@ -28,9 +28,9 @@ pkgs_pip='pip setuptools setuptools-scm wheel build'
 pkgs_pypi="$(vcat misc/pkgs pypi)"
 pkgs_pyfetch="$(vcat misc/pkgs pyfetch)"
 pkgs_nobinary="$(vcat misc/pkgs nobinary)"
-pipdl_args="--no-binary $(echo "$pkgs_nobinary" | tr ' ' ',')"
+pipdl_args="--no-binary $(echo $pkgs_nobinary | tr ' ' ',')"
 
-mirror='https://mirrors.bangmod.cloud'
+mirror='https://mirrors.nju.edu.cn'
 pubkey_epel="RPM-GPG-KEY-EPEL-$ver"
 mirror_docker='https://download.docker.com/linux/centos'
 pubkey_docker='RPM-GPG-KEY-Docker'
@@ -55,18 +55,19 @@ repo_mk() {
 	sudo yum clean --disablerepo='*' --enablerepo=ihep expire-cache
 }
 
-pkg_url() {
+rpm_url() {
 	repoquery $repoqlimit $repoqtree --qf='%{name}@%{repoid}' "$@" |
 		sed 's/ *\[.*//; s/.* //; s/@/ /' |
 		awk '$2 != "base" && $2 != "baseos" && $2 != "appstream" { print $1 }' |
 		sort -u | xargs -r repoquery $repoqlimit --location
 }
 
-pkg_link() {
+rpm_link() {
+	if [ "$#" -eq 0 ]; then mkdir RPMS/rpms; return; fi
 	repoquery $repoqlimit $repoqtree --enablerepo=ihep \
 		--qf='%{name}-%{version}-%{release}.%{arch}.rpm@%{repoid}' "$@" |
 		sed 's/ *\[.*//; s/.* //; s/@/ /' | awk '$2 == "ihep" { print $1 }' |
-		sort -u | (mkdir "$rpm_root"/link; cd "$rpm_root"; xargs -r ln -t link)
+		sort -u | (mkdir RPMS/rpms; cd "$rpm_root"; xargs -r ln -t ../rpms)
 }
 
 chk_bad() {
@@ -94,7 +95,7 @@ if [ "$ver" -eq 7 ]; then
 		"$mirror"/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-Everything-2009.iso
 else
 	wget -nc -P SOURCES \
-		"$mirror"/rocky-linux/8.5/isos/x86_64/Rocky-8.5-x86_64-dvd1.iso
+		"$mirror"/rocky/8.7/isos/x86_64/Rocky-8.7-x86_64-dvd1.iso
 fi
 	chk_bad SOURCES iso
 }
@@ -136,22 +137,21 @@ if [ "$ver" -eq 7 ]; then
 	inst SOURCES/qd.repo /etc/yum.repos.d
 	inst SOURCES/"$pubkey_qd" /etc/pki/rpm-gpg
 	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_qd")
-	sudo yum repolist
 else
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
 		-e "s@https://download\.example/pub/epel/@$mirror/epel/@" \
 		/etc/yum.repos.d/epel.repo
-	sudo yum repolist -v
 fi
+sudo yum repolist -v
 }
 
 epel_get() {
 	if [ "$#" -gt 0 ]; then
-		pkg_url "$@" | xargs wget -nc -P "$rpm_root"/epel
+		rpm_url "$@" | xargs wget -nc -P "$rpm_root"/epel
 		rpm -K "$rpm_root"/epel/*; repo_mk
 		return; fi
 	epel_prep; rm -rf "$rpm_root"/epel; mkdir -p "$rpm_root"/epel
-	pkg_url $pkgs_epel | xargs wget -nc -P "$rpm_root"/epel
+	rpm_url $pkgs_epel | xargs wget -nc -P "$rpm_root"/epel
 	rpm -K "$rpm_root"/epel/*; repo_mk
 }
 
@@ -171,6 +171,20 @@ build() {
 	shift; done; repo_mk
 }
 
+pypi_toggle() {
+	if [ -f /etc/pip.conf ]; then
+		sudo rm /etc/pip.conf /usr/lib64/python3."$py3rel"/distutils/distutils.cfg
+	else
+		inst misc/docker/pip.conf /etc
+		sudo ln -s /etc/pip.conf /usr/lib64/python3."$py3rel"/distutils/distutils.cfg
+	fi
+}
+
+pypi_link() {
+	if [ "$#" -eq 0 ]; then mkdir RPMS/pypi; return; fi
+	mkdir RPMS/pypi; (cd RPMS/pypi; pip3 download pip setuptools "$@")
+}
+
 pypi_prune() {
 	(cd pypi; mv orig/* . || true; rm -rf orig simple; mkdir .keep;
 	vcat ../misc/SHA512SUMS pypi |
@@ -185,7 +199,7 @@ pypi_get() {
 			done | grep '://' | sort -u > /tmp/fetch.txt
 		./misc/fetch.sh /tmp/fetch.txt
 		return; fi
-	sudo pip3 install -U pip
+	pypi_toggle; sudo pip3 install -U pip
 	#(cd pypi; pip3 download $pipdl_args $pkgs_pypi $pkgs_pip)
 	for f in $pkgs_pyfetch; do ./misc/pybuild.sh "$f" 'echo $src' 2> /dev/null;
 		done | grep '://' | sort -u > /tmp/fetch.txt
@@ -193,26 +207,14 @@ pypi_get() {
 	vcat misc/SHA512SUMS pypi | awk '{ print $2 }' |
 		sed -r 's/-([0-9][^-]+).*/==\1/; s/(\.zip|\.tar.[^.]+)$//' |
 		(cd pypi; xargs pip3 download --no-deps $pipdl_args)
-	chk_bad pypi pypi; ./misc/dir2pi.py pypi
-}
-
-pypi_prep() {
-	inst misc/docker/pip.conf /etc
-	sudo ln -s /etc/pip.conf /usr/lib64/python3."$py3rel"/distutils/distutils.cfg
-	sudo pip3 install ./pypi/pip-[0-9]*.whl
-	sudo pip3 install -U setuptools
-	sudo pip3 install build wheel
-	mkdir -p pypi/orig BUILD
+	chk_bad pypi pypi; ./misc/dir2pi.py pypi; pypi_toggle
 }
 
 pybuild() {
+	mkdir -p pypi/orig BUILD
 	while [ "$#" -gt 0 ]; do
 		./misc/pybuild.sh "$1" do_build
 	shift; done; ./misc/dir2pi.py pypi
-}
-
-build_pypi() {
-	pypi_prep; pybuild $pkgs_pyfetch $pkgs_nobinary
 }
 
 set -x

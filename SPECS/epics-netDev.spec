@@ -4,7 +4,7 @@
 
 Summary:        EPICS - Device and Driver Support for General Network Devices
 URL:            https://www-linac.kek.jp/cont/epics/netdev/
-Source0:        %{github_archive shuei %{repo} %{commit}}
+Source0:        %{github_archive_ver shuei %{repo} %{commit} v}
 Patch0:         %{name}-1.1.0-epics7-app-libs-files.patch
 BuildRequires:  epics-autosave, epics-iocStats, gcc-c++, make
 Requires:       epics-autosave, epics-iocStats

@@ -1,3 +1,3 @@
 #!/bin/sh -e
-exec xargs -r wget -nc -P SOURCES < "$1"
+exec xargs -r wget -nc -t 1 -P SOURCES < "$1"
 

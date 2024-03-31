@@ -18,6 +18,10 @@ _iocboot_makefiles() {
 	for d in "$2"/ioc*/; do cp "$1"/utils/ioc.mk "$d"/Makefile; done
 }
 
+_fix_perm() {
+	find "$@" '(' -type d -o -type f -perm -0100 ')' -exec chmod 0755 '{}' ';'
+	find "$@" -type f -not -perm -0100 -exec chmod 0644 '{}' ';'
+}
 _mv_commit() {
 	mv "$1"-"$2"* "$1"; chmod -R go-w "$1"
 }

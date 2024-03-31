@@ -12,7 +12,7 @@ diff -ur softIoc/configure/RELEASE softIoc/configure/RELEASE
 diff -ur softIoc/src/Makefile softIoc/src/Makefile
 --- softIoc/src/Makefile	2019-11-02 03:08:44.000000000 +0800
 +++ softIoc/src/Makefile	2021-07-22 00:36:07.353909512 +0800
-@@ -7,26 +7,30 @@
+@@ -7,26 +7,29 @@
  
  # This is a Makefile fragment, see src/ioc/Makefile.
  
@@ -21,7 +21,6 @@ diff -ur softIoc/src/Makefile softIoc/src/Makefile
 +include $(TOP)/configure/CONFIG
 +
 +USR_CPPFLAGS += -DUSE_TYPED_RSET
-+SHRLIB_VERSION = 3.17.0
  
  PROD_IOC_DEFAULT = softIoc
  PROD_IOC_iOS = -nil-

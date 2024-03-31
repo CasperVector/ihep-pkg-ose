@@ -1,3 +1,4 @@
 kernel-rt kernel-rt-devel docker-ce
-re2c hidapi-devel zeromq-devel procServ
+re2c hidapi-devel zeromq-devel
+procServ
 
