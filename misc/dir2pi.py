@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Refactored from pip2pi <https://github.com/wolever/pip2pi>.
 
 import os

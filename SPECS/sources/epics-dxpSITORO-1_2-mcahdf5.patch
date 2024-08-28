@@ -1,6 +1,6 @@
 diff -ur dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp
---- dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2019-08-10 05:54:39.000000000 +0800
-+++ dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2023-11-03 18:41:06.774136110 +0800
+--- dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2024-08-27 10:32:22.062396481 +0800
++++ dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp	2024-08-27 11:16:33.318709680 +0800
 @@ -123,7 +123,7 @@
      uniqueId(0)
  {
@@ -46,31 +46,7 @@ diff -ur dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp
      setIntegerParam(this->nChannels, mcaNumChannels, *rbValue);
      callParamCallbacks(this->nChannels);
  
-@@ -1350,7 +1357,7 @@
-     int nChannels;
-     int channel=addr;
-     int i;
--    //NDArray *pArray;
-+    NDArray *pArray;
-     NDDataType_t dataType;
-     epicsTimeStamp now;
-     const char* functionName = "getMcaData";
-@@ -1371,6 +1378,14 @@
-             /* Call ourselves recursively but with a specific channel */
-             this->getMcaData(pasynUser, i);
-         }
-+        if (arrayCallbacks)
-+        {
-+            size_t dims[2]; dims[0] = nChannels; dims[1] = this->nChannels;
-+            pArray = this->pNDArrayPool->alloc(2, dims, NDUInt32, 0, NULL);
-+            memcpy(pArray->pData, this->pMapRaw, dims[1] * dims[0] * sizeof(epicsUInt32));
-+            doCallbacksGenericPointer(pArray, NDArrayData, 0);
-+            pArray->release();
-+        }
-     } else {
-         /* Read the MCA spectrum from Handel.
-         * For most devices this means getting 1 channel spectrum here.
-@@ -1380,17 +1395,6 @@
+@@ -1381,17 +1388,6 @@
              "%s::%s Got MCA spectrum channel:%d ptr:%p\n",
              driverName, functionName, channel, pMcaRaw[addr]);
  
@@ -88,3 +64,43 @@ diff -ur dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp
      }
      asynPrint(pasynUser, ASYN_TRACE_FLOW, 
          "%s:%s: exit\n",
+@@ -1715,6 +1711,8 @@
+             /* There must have just been a transition from acquiring to not acquiring */
+ 
+             if (mode == NDDxpModeMCA) {
++                int arrayCallbacks;
++                getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
+                 /* In MCA mode we force a read of the data */
+                 asynPrint(pasynUser, ASYN_TRACEIO_DRIVER, 
+                     "%s::%s Detected acquisition stop! Now reading data\n",
+@@ -1724,6 +1722,30 @@
+                     "%s::%s Detected acquisition stop! Now reading statistics\n",
+                     driverName, functionName);
+                 this->getAcquisitionStatistics(this->pasynUserSelf, DXP_ALL);
++                if (arrayCallbacks)
++                {
++                    size_t dims[2]; dims[0] = nChannels; dims[1] = this->nChannels;
++                    int channel, triggers, outputCounts;
++                    double realTime, triggerLiveTime;
++                    NDArray *pArray = this->pNDArrayPool->alloc(2, dims, NDUInt32, 0, NULL);
++                    memcpy(pArray->pData, this->pMapRaw, dims[1] * dims[0] * sizeof(epicsUInt32));
++                    for (channel = 0; channel < this->nChannels; channel++) {
++                        getDoubleParam(channel, mcaElapsedRealTime, &realTime);
++                        getDoubleParam(channel, NDDxpTriggerLiveTime, &triggerLiveTime);
++                        getIntegerParam(channel, NDDxpEvents, &outputCounts);
++                        getIntegerParam(channel, NDDxpTriggers, &triggers);
++                        pArray->pAttributeList->add(attrRealTimeName[channel],     attrRealTimeDescription[channel],     NDAttrFloat64, &realTime);
++                        pArray->pAttributeList->add(attrLiveTimeName[channel],     attrLiveTimeDescription[channel],     NDAttrFloat64, &triggerLiveTime);
++                        pArray->pAttributeList->add(attrTriggersName[channel],     attrTriggersDescription[channel],     NDAttrInt32,   &triggers);
++                        pArray->pAttributeList->add(attrOutputCountsName[channel], attrOutputCountsDescription[channel], NDAttrInt32,   &outputCounts);
++                    }
++                    this->getAttributes(pArray->pAttributeList);
++                    updateTimeStamp(&pArray->epicsTS);
++                    pArray->timeStamp = pArray->epicsTS.secPastEpoch + pArray->epicsTS.nsec / 1.e9;
++                    pArray->uniqueId = this->uniqueId++;
++                    doCallbacksGenericPointer(pArray, NDArrayData, 0);
++                    pArray->release();
++                }
+             }
+             else {
+                 /* In mapping modes need to make an extra call to pollMappingMode because there could be

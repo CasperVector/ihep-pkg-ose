@@ -12,7 +12,7 @@ case "$ver" in
 	#sed -i '/^\[base\]/,/^$/ s@^#baseurl=.*@baseurl=http://172\.17\.0\.1/centos7@' \
 	#	CentOS-Base.repo;
 	sed -i -e 's/^#baseurl=/baseurl=/' -e 's/^mirrorlist=/#&/' \
-		-e "s@http://mirror\\.centos\\.org/centos/@$mirror/centos/@" \
+		-e "s@http://mirror\\.centos\\.org/centos/\\\$releasever/@$mirror/centos-vault/7.9.2009/@" \
 		-e "s@http://vault\\.centos\\.org/@$mirror/centos-vault/@" \
 		CentOS-*.repo)
 	yum install -y python3
@@ -35,7 +35,7 @@ yum install -y sudo rpm-build yum-utils createrepo less
 sed -i '/^%wheel/ s/$/\nbuilder\tALL=(ALL)\tNOPASSWD: ALL/' /etc/sudoers
 useradd -u "$1" builder; patch -p0 < /prep.patch
 if [ "$ver" -eq 7 ]; then
-	sed -i "s@http://mirror\\.centos\\.org/centos/@$mirror/centos/@" \
+	sed -i "s@http://vault\\.centos\\.org/@$mirror/centos-vault/@" \
 		/etc/yum.repos.d/CentOS-rt.repo
 fi
 ln -s /etc/pip.conf /usr/lib64/python3."$py3rel"/distutils/distutils.cfg

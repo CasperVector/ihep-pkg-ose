@@ -83,11 +83,13 @@ diff -ur ADSupport-R1-10/supportApp/netCDFSrc/os/WIN32/config.h ADSupport-R1-10/
  /* Define to 1 if you have the <stdarg.h> header file. */
  #define HAVE_STDARG_H 1
 diff -ur ADSupport-R1-10/supportApp/xml2Src/Makefile ADSupport-R1-10/supportApp/xml2Src/Makefile
---- ADSupport-R1-10/supportApp/xml2Src/Makefile    2021-05-27 01:17:55.000000000 +0800
-+++ ADSupport-R1-10/supportApp/xml2Src/Makefile 2023-12-29 19:35:31.771010500 +0800
-@@ -1,4 +1,8 @@
+--- ADSupport-R1-10/supportApp/xml2Src/Makefile	2021-05-27 01:17:55.000000000 +0800
++++ ADSupport-R1-10/supportApp/xml2Src/Makefile	2023-12-29 19:35:31.771010500 +0800
+@@ -1,4 +1,10 @@
  TOP=../..
 +ifeq (win32-x86-mingw, $(findstring win32-x86-mingw, $(T_A)))
++  USR_CFLAGS_WIN32 += -D_WIN32_WINNT=0x0600
++else ifeq (windows-x64-mingw, $(findstring windows-x64-mingw, $(T_A)))
 +  USR_CFLAGS_WIN32 += -D_WIN32_WINNT=0x0600
 +endif
 +

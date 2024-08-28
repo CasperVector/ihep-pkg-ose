@@ -2,15 +2,14 @@
 %define commit 3.0.2
 %define cmd_flags CMD_CFLAGS='%{optflags}' \\\
 	CMD_CXXFLAGS='%{optflags} --std=c++11'
-%{meta name license=GPLv3+ version=commit,4}
+%{meta name license=GPLv3+ version=commit,5}
 
 Summary:        EPICS - Siemens S7 PLCs
 URL:            https://oss.aquenos.com/epics/%{repo}/
 Source0:        %{url}/download/%{repo}-%{commit}.tar.gz
 Patch0:         %{name}-3.0.2-app-libs-files.patch
-BuildRequires:  epics-asyn, epics-autosave, epics-iocStats
-BuildRequires:  gcc-c++, make, boost-devel
-Requires:       epics-asyn, epics-autosave, epics-iocStats, boost
+BuildRequires:  epics-asyn, epics-autosave, epics-iocStats, gcc-c++, make
+Requires:       epics-asyn, epics-autosave, epics-iocStats
 
 %{inherit synapps + global}
 %description

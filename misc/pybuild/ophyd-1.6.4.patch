@@ -166,7 +166,7 @@ index b2e3ec0..16c0d56 100644
          devices_staged = []
          try:
              for sig, val in stage_sigs.items():
-+                if val == STAGE_KEEP:
++                if val is STAGE_KEEP:
 +                    val = original_vals[sig]
                  self.log.debug("Setting %s to %r (original value: %r)",
                                 self.name,

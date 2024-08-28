@@ -92,7 +92,7 @@ iso_get() {
 	yyum wget; rm_bad SOURCES iso
 if [ "$ver" -eq 7 ]; then
 	wget -nc -P SOURCES \
-		"$mirror"/centos/7.9.2009/isos/x86_64/CentOS-7-x86_64-Everything-2009.iso
+		"$mirror"/centos-vault/7.9.2009/isos/x86_64/CentOS-7-x86_64-Everything-2009.iso
 else
 	wget -nc -P SOURCES \
 		"$mirror"/rocky/8.7/isos/x86_64/Rocky-8.7-x86_64-dvd1.iso

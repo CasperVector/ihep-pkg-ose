@@ -1,24 +1,18 @@
-diff --git a/bluesky/plan_patterns.py b/bluesky/plan_patterns.py
-index a4f6f46e..f4d2c962 100644
---- a/bluesky/plan_patterns.py
-+++ b/bluesky/plan_patterns.py
-@@ -353,7 +353,7 @@ def outer_list_product(args, snake_axes):
-         c = cycler(motor, pos_list)
-         cyclers.append(c)
+diff --git a/bluesky/plan_stubs.py b/bluesky/plan_stubs.py
+index accab012..ad973936 100644
+--- a/bluesky/plan_stubs.py
++++ b/bluesky/plan_stubs.py
+@@ -1108,6 +1108,8 @@ def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
  
--    return snake_cyclers(cyclers, snaking)
-+    return snake_cyclers(cyclers, snaking), snaking
- 
- 
- def inner_product(num, args):
-@@ -569,4 +569,4 @@ def outer_product(args):
-         c = cycler(motor, steps)
-         cyclers.append(c)
- 
--    return snake_cyclers(cyclers, snaking)
-+    return snake_cyclers(cyclers, snaking), snaking
+         Defaults to `trigger_and_read`
+     """
++    if pos_cache["super_step"]:
++        step.update(pos_cache["super_step"])
+     motors = step.keys()
+     yield from move_per_step(step, pos_cache)
+     yield from take_reading(list(detectors) + list(motors))
 diff --git a/bluesky/plans.py b/bluesky/plans.py
-index b718cbb2..5b68cb42 100644
+index b718cbb2..4f24ec79 100644
 --- a/bluesky/plans.py
 +++ b/bluesky/plans.py
 @@ -68,8 +68,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
@@ -31,55 +25,73 @@ index b718cbb2..5b68cb42 100644
      def inner_count():
          return (yield from bps.repeat(partial(per_shot, detectors),
                                        num=num, delay=delay))
-@@ -77,7 +76,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
+@@ -77,7 +76,8 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
      return (yield from inner_count())
  
  
 -def list_scan(detectors, *args, per_step=None, md=None):
-+def list_scan(detectors, *args, per_step=None, md=None, frag=False):
++def list_scan(detectors, *args, per_step=None,
++              md=None, pos_cache=None, frag=False):
      """
      Scan over one or more variables in steps simultaneously (inner product).
  
-@@ -173,8 +172,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
+@@ -173,11 +173,11 @@ def list_scan(detectors, *args, per_step=None, md=None):
  
      full_cycler = plan_patterns.inner_list_product(args)
  
 -    return (yield from scan_nd(detectors, full_cycler, per_step=per_step,
 -                               md=_md))
-+    return scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
++    return scan_nd(detectors, full_cycler, per_step=per_step,
++                   md=_md, pos_cache=pos_cache, frag=frag)
  
  
- def rel_list_scan(detectors, *args, per_step=None, md=None):
-@@ -229,7 +227,7 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
+-def rel_list_scan(detectors, *args, per_step=None, md=None):
++def rel_list_scan(detectors, *args, per_step=None, md=None, pos_cache=None):
+     """
+     Scan over one variable in steps relative to current position.
+ 
+@@ -225,11 +225,12 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
+     @bpp.relative_set_decorator(motors)
+     def inner_relative_list_scan():
+         return (yield from list_scan(detectors, *args, per_step=per_step,
+-                                     md=_md))
++                                     md=_md, pos_cache=pos_cache))
      return (yield from inner_relative_list_scan())
  
  
 -def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
-+def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None, frag=False):
++def list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
++                   md=None, pos_cache=None, frag=False):
      """
      Scan over a mesh; each motor is on an independent trajectory.
  
-@@ -268,7 +266,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
-     :func:`bluesky.plans.rel_list_scan`
-     """
- 
--    full_cycler = plan_patterns.outer_list_product(args, snake_axes)
-+    full_cycler, snaking = plan_patterns.outer_list_product(args, snake_axes)
- 
-     md_args = []
-     motor_names = []
-@@ -300,8 +298,8 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+@@ -300,12 +301,12 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
      except (AttributeError, KeyError):
          ...
  
 -    return (yield from scan_nd(detectors, full_cycler,
 -                               per_step=per_step, md=_md))
-+    ret = scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
-+    return (snaking, ret) if frag else ret
++    return scan_nd(detectors, full_cycler, per_step=per_step,
++                   md=_md, pos_cache=pos_cache, frag=frag)
  
  
  def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
-@@ -414,8 +412,7 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
+-                       md=None):
++                       md=None, pos_cache=None):
+     """
+     Scan over a mesh; each motor is on an independent trajectory. Each point is
+     relative to the current position.
+@@ -357,7 +358,8 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
+     def inner_relative_list_grid_scan():
+         return (yield from list_grid_scan(detectors, *args,
+                                           snake_axes=snake_axes,
+-                                          per_step=per_step, md=_md))
++                                          per_step=per_step, md=_md,
++                                          pos_cache=pos_cache))
+     return (yield from inner_relative_list_grid_scan())
+ 
+ 
+@@ -414,8 +416,7 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
  
      steps = np.linspace(**_md['plan_pattern_args'])
  
@@ -89,7 +101,7 @@ index b718cbb2..5b68cb42 100644
      def inner_scan():
          for step in steps:
              yield from per_step(detectors, motor, step)
-@@ -516,8 +513,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+@@ -516,8 +517,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
  
      steps = np.logspace(**_md['plan_pattern_args'])
  
@@ -99,7 +111,7 @@ index b718cbb2..5b68cb42 100644
      def inner_log_scan():
          for step in steps:
              yield from per_step(detectors, motor, step)
-@@ -626,8 +622,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
+@@ -626,8 +626,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
      else:
          _md['hints'].setdefault('dimensions', dimensions)
  
@@ -109,7 +121,7 @@ index b718cbb2..5b68cb42 100644
      def adaptive_core():
          next_pos = start
          step = (max_step - min_step) / 2
-@@ -821,8 +816,7 @@ def tune_centroid(
+@@ -821,8 +820,7 @@ def tune_centroid(
      low_limit = min(start, stop)
      high_limit = max(start, stop)
  
@@ -119,16 +131,23 @@ index b718cbb2..5b68cb42 100644
      def _tune_core(start, stop, num, signal):
          next_pos = start
          step = (stop - start) / (num - 1)
-@@ -870,7 +864,7 @@ def tune_centroid(
+@@ -870,7 +868,8 @@ def tune_centroid(
      return (yield from _tune_core(start, stop, num, signal))
  
  
 -def scan_nd(detectors, cycler, *, per_step=None, md=None):
-+def scan_nd(detectors, cycler, *, per_step=None, md=None, frag=False):
++def scan_nd(detectors, cycler, *, per_step=None,
++            md=None, pos_cache=None, frag=False):
      """
      Scan over an arbitrary N-dimensional trajectory.
  
-@@ -992,12 +986,15 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
+@@ -988,16 +987,20 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
+                             "<Signature (detectors, step, pos_cache)> or "
+                             "<Signature (detectors, motor, step)>. \n"
+                             "per_step signature received: {}".format(sig))
+-    pos_cache = defaultdict(lambda: None)  # where last position is stashed
++    if pos_cache is None:  # where last position is stashed
++        pos_cache = defaultdict(lambda: None)
      cycler = utils.merge_cycler(cycler)
      motors = list(cycler.keys)
  
@@ -150,16 +169,17 @@ index b718cbb2..5b68cb42 100644
      return (yield from inner_scan_nd())
  
  
-@@ -1009,7 +1006,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
+@@ -1009,7 +1012,8 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
      yield from scan(detectors, *args, num, per_step=None, md=md)
  
  
 -def scan(detectors, *args, num=None, per_step=None, md=None):
-+def scan(detectors, *args, num=None, per_step=None, md=None, frag=False):
++def scan(detectors, *args, num=None, per_step=None,
++         md=None, pos_cache=None, frag=False):
      """
      Scan over one multi-motor trajectory.
  
-@@ -1092,7 +1089,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
+@@ -1092,7 +1096,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
  
      default_dimensions = [(x_fields, 'primary')]
  
@@ -168,26 +188,43 @@ index b718cbb2..5b68cb42 100644
      if len(x_fields) > 0:
          default_hints.update(dimensions=default_dimensions)
  
-@@ -1103,11 +1100,10 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
+@@ -1103,11 +1107,12 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
  
      full_cycler = plan_patterns.inner_product(num=num, args=args)
  
 -    return (yield from scan_nd(detectors, full_cycler,
 -                               per_step=per_step, md=_md))
-+    return scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
++    return scan_nd(detectors, full_cycler, per_step=per_step,
++                   md=_md, pos_cache=pos_cache, frag=frag)
  
  
 -def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
-+def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None, frag=False):
++def grid_scan(detectors, *args, snake_axes=None, per_step=None,
++              md=None, pos_cache=None, frag=False):
      """
      Scan over a mesh; each motor is on an independent trajectory.
  
-@@ -1242,13 +1238,15 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
-             args_modified.extend(chunk[:-1])
-         else:
-             args_modified.extend(chunk)
--    full_cycler = plan_patterns.outer_product(args=args_modified)
-+    full_cycler, snaking = plan_patterns.outer_product(args=args_modified)
+@@ -1201,18 +1206,6 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+                 raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: "
+                                  f"'{snake_axes}'")
+ 
+-            # Check if the snaking is enabled for the slowest motor.
+-            if len(motors) and (motors[0] in snake_axes):
+-                raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: "
+-                                 f"'{snake_axes}'")
+-
+-            # Check that all motors in the chunk_args are controlled in the scan.
+-            #   It is very likely that the script running the plan has a bug.
+-            if any([_ not in motors for _ in snake_axes]):
+-                raise ValueError(f"The list of axes 'snake_axes' contains motors "
+-                                 f"that are not controlled during the scan: "
+-                                 f"'{snake_axes}'")
+-
+             # Enable snaking for the selected axes.
+             #   If the argument `snake_axes` is specified (not None), then
+             #   any `snakeX` values that could be specified in `args` are ignored.
+@@ -1245,10 +1238,12 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+     full_cycler = plan_patterns.outer_product(args=args_modified)
  
      md_args = []
 +    progress_nums = []
@@ -199,7 +236,7 @@ index b718cbb2..5b68cb42 100644
          if i > 0:
              # snake argument only shows up after the first motor
              md_args.append(snake)
-@@ -1269,7 +1267,7 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+@@ -1269,7 +1264,7 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
             'plan_pattern_args': dict(args=md_args),
             'plan_pattern_module': plan_patterns.__name__,
             'motors': tuple(motor_names),
@@ -208,17 +245,51 @@ index b718cbb2..5b68cb42 100644
             }
      _md.update(md or {})
      _md['hints'].setdefault('gridding', 'rectilinear')
-@@ -1279,8 +1277,8 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+@@ -1279,11 +1274,12 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
      except (AttributeError, KeyError):
          ...
  
 -    return (yield from scan_nd(detectors, full_cycler,
 -                               per_step=per_step, md=_md))
-+    ret = scan_nd(detectors, full_cycler, per_step=per_step, md=_md, frag=frag)
-+    return (snaking, ret) if frag else ret
++    return scan_nd(detectors, full_cycler, per_step=per_step,
++                   md=_md, pos_cache=pos_cache, frag=frag)
  
  
- def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+-def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
++def rel_grid_scan(detectors, *args, snake_axes=None,
++                  per_step=None, md=None, pos_cache=None):
+     """
+     Scan over a mesh relative to current position.
+ 
+@@ -1334,7 +1330,8 @@ def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+     def inner_rel_grid_scan():
+         return (yield from grid_scan(detectors, *args,
+                                      snake_axes=snake_axes,
+-                                     per_step=per_step, md=_md))
++                                     per_step=per_step, md=_md,
++                                     pos_cache=pos_cache))
+ 
+     return (yield from inner_rel_grid_scan())
+ 
+@@ -1347,7 +1344,8 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
+     yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
+ 
+ 
+-def rel_scan(detectors, *args, num=None, per_step=None, md=None):
++def rel_scan(detectors, *args, num=None,
++             per_step=None, md=None, pos_cache=None):
+     """
+     Scan over one multi-motor trajectory relative to current position.
+ 
+@@ -1391,7 +1389,7 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
+     @bpp.relative_set_decorator(motors)
+     def inner_rel_scan():
+         return (yield from scan(detectors, *args, num=num,
+-                                per_step=per_step, md=_md))
++                                per_step=per_step, md=_md, pos_cache=pos_cache))
+ 
+     return (yield from inner_rel_scan())
+ 
 @@ -1437,8 +1435,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
          def clear_output(wait=False):
              pass
@@ -234,55 +305,104 @@ index b718cbb2..5b68cb42 100644
  def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
                    y_range, dr, factor, *, dr_y=None, tilt=0.0, per_step=None,
 -                  md=None):
-+                  md=None, frag=False):
++                  md=None, pos_cache=None, frag=False):
      '''Absolute fermat spiral scan, centered around (x_start, y_start)
  
      Parameters
-@@ -1547,7 +1544,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
+@@ -1547,11 +1544,13 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
          _md['hints'].update({'dimensions': dimensions})
      _md.update(md or {})
  
 -    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
-+    return scan_nd(detectors, cyc, per_step=per_step, md=_md, frag=frag)
++    return scan_nd(detectors, cyc, per_step=per_step,
++                   md=_md, pos_cache=pos_cache, frag=frag)
  
  
  def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
-@@ -1604,7 +1601,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
+-                      factor, *, dr_y=None, tilt=0.0, per_step=None, md=None):
++                      factor, *, dr_y=None, tilt=0.0, per_step=None,
++                      md=None, pos_cache=None):
+     '''Relative fermat spiral scan
+ 
+     Parameters
+@@ -1598,13 +1597,15 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
+                                          0, 0,
+                                          x_range, y_range,
+                                          dr, factor, dr_y=dr_y, tilt=tilt,
+-                                         per_step=per_step, md=_md))
++                                         per_step=per_step, md=_md,
++                                         pos_cache=pos_cache))
+ 
+     return (yield from inner_relative_spiral_fermat())
  
  
- def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
+-def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 -           nth, *, dr_y=None, tilt=0.0, per_step=None, md=None):
-+           nth, *, dr_y=None, tilt=0.0, per_step=None, md=None, frag=False):
++def spiral(detectors, x_motor, y_motor, x_start, y_start,
++           x_range, y_range, dr, nth, *, dr_y=None, tilt=0.0,
++           per_step=None, md=None, pos_cache=None, frag=False):
      '''Spiral scan, centered around (x_start, y_start)
  
      Parameters
-@@ -1674,7 +1671,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
+@@ -1674,11 +1675,12 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
          _md['hints'].update({'dimensions': dimensions})
      _md.update(md or {})
  
 -    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
-+    return scan_nd(detectors, cyc, per_step=per_step, md=_md, frag=frag)
++    return scan_nd(detectors, cyc, per_step=per_step,
++                   md=_md, pos_cache=pos_cache, frag=frag)
  
  
  def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
-@@ -1729,7 +1726,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
+-               *, dr_y=None, tilt=0.0, per_step=None, md=None):
++               *, dr_y=None, tilt=0.0, per_step=None, md=None, pos_cache=None):
+ 
+     '''Relative spiral scan
+ 
+@@ -1723,13 +1725,15 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
+                                   0, 0,
+                                   x_range, y_range, dr, nth,
+                                   dr_y=dr_y, tilt=tilt,
+-                                  per_step=per_step, md=_md))
++                                  per_step=per_step, md=_md,
++                                  pos_cache=pos_cache))
+ 
+     return (yield from inner_relative_spiral())
  
  
- def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
+-def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
 -                  y_range, x_num, y_num, *, per_step=None, md=None):
-+                  y_range, x_num, y_num, *, per_step=None, md=None, frag=False):
++def spiral_square(detectors, x_motor, y_motor, x_center, y_center,
++                  x_range, y_range, x_num, y_num, *, per_step=None,
++                  md=None, pos_cache=None, frag=False):
      '''Absolute square spiral scan, centered around (x_center, y_center)
  
      Parameters
-@@ -1796,7 +1793,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
+@@ -1796,11 +1800,12 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
      except (AttributeError, KeyError):
          ...
  
 -    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
-+    return scan_nd(detectors, cyc, per_step=per_step, md=_md, frag=frag)
++    return scan_nd(detectors, cyc, per_step=per_step,
++                   md=_md, pos_cache=pos_cache, frag=frag)
  
  
  def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
+-                      x_num, y_num, *, per_step=None, md=None):
++                      x_num, y_num, *, per_step=None, md=None, pos_cache=None):
+     '''Relative square spiral scan, centered around current (x, y) position.
+ 
+     Parameters
+@@ -1843,7 +1848,8 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
+         return (yield from spiral_square(detectors, x_motor, y_motor,
+                                          0, 0,
+                                          x_range, y_range, x_num, y_num,
+-                                         per_step=per_step, md=_md))
++                                         per_step=per_step, md=_md,
++                                         pos_cache=pos_cache))
+ 
+     return (yield from inner_relative_spiral())
+ 
 diff --git a/bluesky/preprocessors.py b/bluesky/preprocessors.py
 index 1c667daa..603139be 100644
 --- a/bluesky/preprocessors.py
@@ -343,29 +463,3 @@ index 1c667daa..603139be 100644
  contingency_decorator = make_decorator(contingency_wrapper)
  stub_decorator = make_decorator(stub_wrapper)
  configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
-diff --git a/bluesky/tests/test_plan_patterns.py b/bluesky/tests/test_plan_patterns.py
-index 30c85149..41779302 100644
---- a/bluesky/tests/test_plan_patterns.py
-+++ b/bluesky/tests/test_plan_patterns.py
-@@ -269,7 +269,7 @@ def test_outer_product(hw, args):
-     # Convert motor names to actual motors in the argument list using fixture 'hw'
-     args = [getattr(hw, _) if isinstance(_, str) else _ for _ in args]
- 
--    full_cycler = outer_product(args=args)
-+    full_cycler = outer_product(args=args)[0]
-     event_list = list(full_cycler)
- 
-     # The list of motors
-diff --git a/bluesky/tests/test_plans.py b/bluesky/tests/test_plans.py
-index 7a05a410..d07bf129 100644
---- a/bluesky/tests/test_plans.py
-+++ b/bluesky/tests/test_plans.py
-@@ -451,7 +451,7 @@ def _grid_scan_position_list(args, snake_axes):
- 
-     # Note, that outer_product is used to generate the list of coordinate points
-     #   while the plan is executed, but it is tested elsewhere, so it can be trusted
--    full_cycler = outer_product(args=args_modified)
-+    full_cycler = outer_product(args=args_modified)[0]
-     event_list = list(full_cycler)
- 
-     # The list of motors

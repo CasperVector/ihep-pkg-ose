@@ -1,7 +1,7 @@
-diff -ur pyqtgraph-0.12.4/pyqtgraph/graphicsItems/ImageItem.py pyqtgraph-0.12.4/pyqtgraph/graphicsItems/ImageItem.py
---- pyqtgraph-0.12.4/pyqtgraph/graphicsItems/ImageItem.py	2022-03-04 18:37:04.000000000 +0800
-+++ pyqtgraph-0.12.4/pyqtgraph/graphicsItems/ImageItem.py	2023-09-24 15:42:14.555096225 +0800
-@@ -150,6 +150,7 @@
+diff -ur pyqtgraph-0.13.7/pyqtgraph/graphicsItems/ImageItem.py pyqtgraph-0.13.7/pyqtgraph/graphicsItems/ImageItem.py
+--- pyqtgraph-0.13.7/pyqtgraph/graphicsItems/ImageItem.py	2022-03-04 18:37:04.000000000 +0800
++++ pyqtgraph-0.13.7/pyqtgraph/graphicsItems/ImageItem.py	2023-09-24 15:42:14.555096225 +0800
+@@ -149,6 +149,7 @@
              self.levels = levels
              self._defferedLevels = levels
              return
@@ -9,7 +9,7 @@ diff -ur pyqtgraph-0.12.4/pyqtgraph/graphicsItems/ImageItem.py pyqtgraph-0.12.4/
          if levels is not None:
              levels = self._xp.asarray(levels)
          self.levels = levels
-@@ -438,9 +439,7 @@
+@@ -435,9 +436,7 @@
          if gotNewData:
              self.sigImageChanged.emit()
          if self._defferedLevels is not None:

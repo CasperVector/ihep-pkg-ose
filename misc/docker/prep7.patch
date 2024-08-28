@@ -4,7 +4,7 @@ diff -Nur / /
 @@ -0,0 +1,7 @@
 +[rt]
 +name=CentOS-7-rt
-+baseurl=http://mirror.centos.org/centos/$releasever/rt/$basearch/
++baseurl=http://vault.centos.org/7.9.2009/rt/$basearch/
 +gpgcheck=1
 +enabled=0
 +gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7

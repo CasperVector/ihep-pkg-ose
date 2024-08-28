@@ -146,6 +146,37 @@ diff -ur pyqtgraph-0.11.1/pyqtgraph/colormap.py pyqtgraph-0.11.1/pyqtgraph/color
 +    cmap = (np.array(cmaps[name]) * 255 + 0.5).astype("int")
 +    return ColorMap(np.linspace(0.0, 1.0, len(cmap)), cmap)
 +
+diff -u pyqtgraph-0.11.1/pyqtgraph/graphicsItems/GradientEditorItem.py pyqtgraph-0.11.1/pyqtgraph/graphicsItems/GradientEditorItem.py
+--- pyqtgraph-0.11.1/pyqtgraph/graphicsItems/GradientEditorItem.py	2020-12-08 06:53:00.000000000 +0800
++++ pyqtgraph-0.11.1/pyqtgraph/graphicsItems/GradientEditorItem.py	2024-07-22 01:23:14.038631429 +0800
+@@ -8,7 +8,7 @@
+ from .GraphicsWidget import GraphicsWidget
+ from ..widgets.SpinBox import SpinBox
+ from ..pgcollections import OrderedDict
+-from ..colormap import ColorMap
++from ..colormap import ColorMap, cmaps, get as cmap_get
+ 
+ 
+ __all__ = ['TickSliderItem', 'GradientEditorItem']
+@@ -28,6 +28,7 @@
+     ('plasma', {'ticks': [(0.0, (12, 7, 134, 255)), (0.25, (126, 3, 167, 255)), (0.5, (203, 71, 119, 255)), (0.75, (248, 149, 64, 255)), (1.0, (239, 248, 33, 255))], 'mode': 'rgb'}),
+     ('magma', {'ticks': [(0.0, (0, 0, 3, 255)), (0.25, (80, 18, 123, 255)), (0.5, (182, 54, 121, 255)), (0.75, (251, 136, 97, 255)), (1.0, (251, 252, 191, 255))], 'mode': 'rgb'}),
+ ])
++Gradients.update([(k, {'ticks': cmap_get(k), 'mode': 'rgb'}) for k in cmaps])
+ 
+ def addGradientListToDocstring():
+     """Decorator to add list of current pre-defined gradients to the end of a function docstring."""
+@@ -805,6 +806,10 @@
+         ==============  ====================================================================
+         """
+         ## public
++        if isinstance(state['ticks'], ColorMap):
++            self.setColorMap(state['ticks'])
++            self.showTicks(False)
++            return
+         
+         # Mass edit ticks without graphics update
+         signalsBlocked = self.blockSignals(True)
 diff -ur pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py
 --- pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py	2020-12-19 11:01:04.000000000 +0800
 +++ pyqtgraph-0.11.1/pyqtgraph/graphicsItems/ScatterPlotItem.py	2022-10-05 13:57:57.610582204 +0800

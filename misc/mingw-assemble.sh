@@ -1,13 +1,20 @@
 #!/bin/sh -xe
 
+# Download the re2c tarball from <https://github.com/skvadrik/re2c/releases/>,
+# put it in SOURCES and run this script.  The contents generated in $PWD/mingw
+# are suitable for use under Windows after native build with mingw-build.sh;
+# see misc/SHA512SUMS/mingw for the recommended environment.
+
 root="$PWD"
 patches="$root/SPECS/sources"
 pkgs='autosave ipac seq calc iocStats asyn busy sscan motor'
 ads='ADSupport ADCore'
 
 expand_rename() {
-	tar xpf "$root/SOURCES/$1"-*.tar.*
-	mv "$1"-* "$(echo "$1" | sed -r 's/-R?[0-9].*//')";
+	local fname="$1"
+	if [ "$fname" = seq ]; then fname=sequencer-mirror; fi
+	tar xpf "$root/SOURCES/$fname"-*.tar.*
+	mv "$fname"-* "$1"
 }
 norm_release() {
 	(cd /opt/epics; make release MOD_="$OLDPWD/$1" MODULE_LIST=MOD_)
@@ -17,12 +24,11 @@ add_patch() {
 }
 
 mkdir mingw; cd mingw
-# <https://github.com/skvadrik/re2c/releases/download/3.0/re2c-3.0.tar.xz>
 expand_rename support; cd support; expand_rename re2c
 cp "$patches"/epics-support-*.release utils/support.release
 sed "s,@epics_root@,/opt/epics,g; s,@etop_base@,/opt/epics/base,g" \
 	< utils/support.release > configure/RELEASE
-cp "$root"/misc/mingw-build.sh .
+cp "$root"/misc/mingw-*.sh .
 
 for name in base $pkgs areaDetector; do
 	expand_rename "$name"; [ "$name" = base ] || norm_release "$name"; done
@@ -39,7 +45,7 @@ add_patch asyn files
 add_patch busy config
 add_patch motor bugs
 
-rmdir motor/modules/motor*/ areaDetector/AD*/; cd areaDetector
+rmdir motor/modules/motor*/ areaDetector/*/ || true; cd areaDetector
 for name in $ads; do expand_rename "$name"; done
 for name in configure/EXAMPLE_* ADCore/iocBoot/EXAMPLE_*
 	do mv "$name" "$(echo "$name" | sed 's/\<EXAMPLE_//')"; done
