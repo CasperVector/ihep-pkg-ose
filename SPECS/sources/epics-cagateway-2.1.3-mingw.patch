@@ -1,0 +1,12 @@
+diff -ur ca-gateway-2.1.3/src/Makefile ca-gateway/src/Makefile
+--- ca-gateway-2.1.3/src/Makefile	2021-12-15 21:07:30.000000000 +0800
++++ ca-gateway/src/Makefile	2024-10-27 00:41:43.566403282 +0800
+@@ -27,7 +27,7 @@
+ 
+ ifeq ($(USE_PCRE),YES)
+   USR_CXXFLAGS += -DUSE_PCRE
+-  ifeq ($(OS_CLASS),WIN32)
++  ifeq (0,1) #($(OS_CLASS),WIN32)
+     USR_INCLUDES += -I$(PCRE_DIR)/inc
+     PROD_LIBS += pcre3
+     ifeq ($(CMPLR_CLASS),msvc)

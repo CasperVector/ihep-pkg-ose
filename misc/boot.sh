@@ -31,6 +31,7 @@ pkgs_nobinary="$(vcat misc/pkgs nobinary)"
 pipdl_args="--no-binary $(echo $pkgs_nobinary | tr ' ' ',')"
 
 mirror='https://mirrors.nju.edu.cn'
+mirror_epel='https://archives.fedoraproject.org/pub/archive/epel'
 pubkey_epel="RPM-GPG-KEY-EPEL-$ver"
 mirror_docker='https://download.docker.com/linux/centos'
 pubkey_docker='RPM-GPG-KEY-Docker'
@@ -132,7 +133,7 @@ fi
 	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_epel" "$pubkey_docker")
 if [ "$ver" -eq 7 ]; then
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
-		-e "s@http://download\\.fedoraproject\\.org/pub/epel/@$mirror/epel/@" \
+		-e "s@http://download\\.fedoraproject\\.org/pub/epel/@$mirror_epel/@" \
 		/etc/yum.repos.d/epel.repo
 	inst SOURCES/qd.repo /etc/yum.repos.d
 	inst SOURCES/"$pubkey_qd" /etc/pki/rpm-gpg

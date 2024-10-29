@@ -1,13 +1,13 @@
 %define repo ca-gateway
-%{meta license=EPICS version=2.1.3,4}
+%{meta license=EPICS version=2.1.3,5}
 
 Name:           epics-cagateway
 Summary:        EPICS - Channel Access PV Gateway
 URL:            https://epics.anl.gov/extensions/gateway/index.php
 Source0:        %{github_archive_ver epics-extensions %{repo} %{version} v}
-Patch0:         %{name}-2.1.2-killer.patch
-BuildRequires:  epics-base, epics-pcas, gcc-c++, make, perl
-Requires:       epics-base, epics-pcas
+Patch0:         %{name}-2.1.3-config.patch
+BuildRequires:  epics-base, epics-pcas, gcc-c++, make, perl, pcre-devel
+Requires:       epics-base, epics-pcas, pcre
 
 %{inherit epics + global}
 %description

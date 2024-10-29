@@ -1,5 +1,5 @@
-base support ADSupport autosave ipac
-seq calc iocStats asyn busy sscan
+base support ADSupport autosave
+iocStats ipac seq calc asyn busy sscan
 motor ADCore softIoc medm pcas cagateway
 
 alive allenBradley caputRecorder

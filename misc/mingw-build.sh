@@ -36,6 +36,11 @@ export EPICS_HOST_ARCH=$EPICS_HOST_ARCH
 export PATH="\$PATH;\$EPICS_BASE/bin/\$EPICS_HOST_ARCH"
 export EPICS_CA_ADDR_LIST=127.255.255.255
 export EPICS_CA_AUTO_ADDR_LIST=NO
+
+case "\$PATH" in
+	*$mingw/bin*) :;;
+	*) PATH="$mingw/bin;\$PATH";;
+esac
 EOF
 fi
 . "$profile"
@@ -45,13 +50,11 @@ norm_release() {
 }
 sed "s,@epics_root@,$support,g; s,@etop_base@,$EPICS_BASE,g" \
 	< utils/support.release > configure/RELEASE
-if ! which re2c; then cd re2c
-	# <https://github.com/skeeto/w64devkit/issues/50>
-	if "$w64devkit"; then sed -i \
-		's/func_convert_file_msys_to_w32/func_convert_file_noop/' configure; fi
-	./configure --prefix="$mingw"
-	$make; make install
-cd -; fi
+if ! which re2c; then ./mingw-libbuild re2c; fi
+if [ -d pcre ] && ! which pcregrep; then
+	sed -i 's/\tln -sf/\t@echo ln -sf/g' pcre/Makefile.*
+	./mingw-libbuild pcre
+fi
 cd base; $make; cd ..
 $make MODULE_LIST=
 for name in $pkgs areaDetector; do norm_release "$name"; done

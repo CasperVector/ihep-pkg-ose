@@ -1,3 +1,9 @@
+diff -Nur ADUVC/99-uvc.rules ADUVC/99-uvc.rules
+--- ADUVC/99-uvc.rules	1970-01-01 08:00:00.000000000 +0800
++++ ADUVC/99-uvc.rules	2022-10-12 01:28:42.916446084 +0800
+@@ -0,0 +1,2 @@
++#SUBSYSTEM=="usb", ATTRS{idVendor}=="1133", GROUP="video", MODE="0660"
++
 diff -Nur ADUVC/iocs/uvcIOC/configure/RELEASE ADUVC/iocs/uvcIOC/configure/RELEASE
 --- ADUVC/iocs/uvcIOC/configure/RELEASE	2022-06-29 22:37:34.000000000 +0800
 +++ ADUVC/iocs/uvcIOC/configure/RELEASE	2022-10-12 01:19:26.314843588 +0800
@@ -12,3 +18,15 @@ diff -Nur ADUVC/iocs/uvcIOC/configure/RELEASE ADUVC/iocs/uvcIOC/configure/RELEAS
  
  -include $(TOP)/../../../configure/RELEASE_PRODS_INCLUDE
  -include $(TOP)/RELEASE.local
+diff -Nur ADUVC/iocs/uvcIOC/iocBoot/iocADUVC/st.cmd ADUVC/iocs/uvcIOC/iocBoot/iocADUVC/st.cmd
+--- ADUVC/iocs/uvcIOC/iocBoot/iocADUVC/st.cmd	2022-06-29 22:37:34.000000000 +0800
++++ ADUVC/iocs/uvcIOC/iocBoot/iocADUVC/st.cmd	2022-10-12 01:20:44.406304168 +0800
+@@ -8,7 +8,7 @@
+ uvcApp_registerRecordDeviceDriver(pdbbase) 
+ 
+ # Prefix for all records
+-epicsEnvSet("PREFIX", "XF:10IDC-BI{UVC-Cam:1}")
++epicsEnvSet("PREFIX", "13UVC1:")
+ # The port name for the detector
+ epicsEnvSet("PORT",   "UVC1")
+ # The queue size for all plugins
