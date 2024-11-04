@@ -23,7 +23,13 @@ _fix_perm() {
 	find "$@" -type f -not -perm -0100 -exec chmod 0644 '{}' ';'
 }
 _mv_commit() {
-	mv "$1"-"$2"* "$1"; chmod -R go-w "$1"
+	local d="$(echo "$1" | tr A-Z a-z)"
+	if [ -d "$d" ]; then
+		[ "$d" == "$1" ] || mv "$d" "$1"
+	else
+		mv "$1"-"$2"* "$1"
+	fi
+	chmod -R go-w "$1"
 }
 _mv_build() {
 	if [ -d "$2" ]; then sudo rmdir "$2"; fi
@@ -61,5 +67,16 @@ _fix_arch() {
 	local arch; arch=$1; shift
 	if [ "$#" -eq 1 -a ! -f "$1" ]; then return; fi
 	sed -i "/^ARCH/ s/^/#/; /$arch\$/ s/^#ARCH/ARCH/" "$@"
+}
+
+_link_so() {
+	while [ "$#" -gt 0 ]; do
+		local dirname="$(dirname "$1")" basename="$(basename "$1")"
+		local soname="$(objdump -p "$1" | awk '/SONAME/ { print $2 }')"
+		local barename="$(echo "$basename" | sed 's/\.so\..*/.so/')"
+		if [ -z "$soname" ]; then soname="$basename"; fi
+		[ "$basename" = "$soname" ] || ln -s "$basename" "$dirname/$soname"
+		[ "$soname" = "$barename" ] || ln -s "$soname" "$dirname/$barename"
+	shift; done
 }
 

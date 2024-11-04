@@ -31,6 +31,7 @@ pkgs_nobinary="$(vcat misc/pkgs nobinary)"
 pipdl_args="--no-binary $(echo $pkgs_nobinary | tr ' ' ',')"
 
 mirror='https://mirrors.nju.edu.cn'
+pubkey_scl='RPM-GPG-KEY-CentOS-SIG-SCLo'
 mirror_epel='https://archives.fedoraproject.org/pub/archive/epel'
 pubkey_epel="RPM-GPG-KEY-EPEL-$ver"
 mirror_docker='https://download.docker.com/linux/centos'
@@ -135,9 +136,13 @@ if [ "$ver" -eq 7 ]; then
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
 		-e "s@http://download\\.fedoraproject\\.org/pub/epel/@$mirror_epel/@" \
 		/etc/yum.repos.d/epel.repo
+	yyum --enablerepo=extras centos-release-scl-rh
+	sudo sed -i -e 's/^#baseurl=/baseurl=/' -e 's/^mirrorlist=/#&/' \
+		-e "s@http://mirror\\.centos\\.org/centos/7/@$mirror/centos-vault/7.9.2009/@" \
+		/etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
 	inst SOURCES/qd.repo /etc/yum.repos.d
 	inst SOURCES/"$pubkey_qd" /etc/pki/rpm-gpg
-	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_qd")
+	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_scl" "$pubkey_qd")
 else
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
 		-e "s@https://download\.example/pub/epel/@$mirror/epel/@" \

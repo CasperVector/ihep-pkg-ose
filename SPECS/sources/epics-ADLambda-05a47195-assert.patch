@@ -1,0 +1,17 @@
+diff -ur ADLambda/LambdaApp/src/ADLambda.cpp ADLambda/LambdaApp/src/ADLambda.cpp
+--- ADLambda/LambdaApp/src/ADLambda.cpp	2023-09-22 04:33:53.000000000 +0800
++++ ADLambda/LambdaApp/src/ADLambda.cpp	2023-10-26 21:21:53.300129466 +0800
+@@ -461,10 +461,9 @@
+ 	// Set Thresholds
+ 	std::vector<double> thresholds = det->thresholds();
+ 	
+-	thresholds.reserve(2);
+-	
+-	if (std::abs(thresholds[0] - low_energy) >= 0.00001 || 
+-        ((dual || charge) && (std::abs(thresholds[1] - high_energy) >= 0.00001)))
++	if ((thresholds.size() < 1 || std::abs(thresholds[0] - low_energy) >= 0.00001) ||
++        ((dual || charge) &&
++            (thresholds.size() < 2 || std::abs(thresholds[1] - high_energy) >= 0.00001)))
+     {
+         if (dual || charge) {
+             printf("Setting thresholds: %f keV, %f keV\n", low_energy, high_energy);

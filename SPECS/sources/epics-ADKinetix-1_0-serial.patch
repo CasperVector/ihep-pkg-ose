@@ -1,0 +1,119 @@
+diff -ur ADKinetix-R1-0/kinetixApp/src/ADKinetix.cpp ADKinetix-R1-0/kinetixApp/src/ADKinetix.cpp
+--- ADKinetix-R1-0/kinetixApp/src/ADKinetix.cpp	2024-08-12 18:28:42.201572886 +0800
++++ ADKinetix-R1-0/kinetixApp/src/ADKinetix.cpp	2024-08-12 19:00:55.703202773 +0800
+@@ -25,10 +25,10 @@
+  * @brief Function that instatiates a driver object. Called from IOC shell
+  * 
+  */
+-extern "C" int ADKinetixConfig(int deviceIndex, const char *portName, int maxSizeX, int maxSizeY, int dataType,
++extern "C" int ADKinetixConfig(const char *deviceId, const char *portName, int maxSizeX, int maxSizeY, int dataType,
+                                int maxBuffers, size_t maxMemory, int priority, int stackSize)
+ {
+-    new ADKinetix(deviceIndex, portName, maxSizeX, maxSizeY, (NDDataType_t)dataType, maxBuffers, maxMemory, priority, stackSize);
++    new ADKinetix(deviceId, portName, maxSizeX, maxSizeY, (NDDataType_t)dataType, maxBuffers, maxMemory, priority, stackSize);
+     return (asynSuccess);
+ }
+ 
+@@ -485,7 +485,7 @@
+     dims[1] = (size_t)((this->cameraContext->region.p2 - this->cameraContext->region.p1 + 1) / this->cameraContext->region.pbin);
+ }
+ 
+-ADKinetix::ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType, int maxBuffers, size_t maxMemory, int priority, int stackSize)
++ADKinetix::ADKinetix(const char *deviceId, const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType, int maxBuffers, size_t maxMemory, int priority, int stackSize)
+     : ADDriver(portName, 1, NUM_KINETIX_PARAMS, maxBuffers, maxMemory, 0, 0, 0, 1, priority, stackSize)
+ {
+     const char *functionName = "ADKinetix";
+@@ -513,27 +513,38 @@
+     }
+ 
+     uns16 sdkVersion;
+-    int32 serialNumber;
+     pl_pvcam_get_ver(&sdkVersion);
+     char sdkVersionStr[40], fwVersionStr[40], modelStr[40], vendorStr[40], serialNumberStr[40];
+     snprintf(sdkVersionStr, 40, "%d.%d.%d", (sdkVersion >> 8 & 0xFF), (sdkVersion >> 4 & 0xF), (sdkVersion >> 0 & 0xF));
+     setStringParam(ADSDKVersion, sdkVersionStr);
+ 
++    CameraContext cameraContext;
++    int i, detIndex = -1;
+     int16 numCameras = 0;
++    if (!strlen(deviceId)) deviceId = "0";
++    if (strlen(deviceId) < 2) detIndex = strtol(deviceId, NULL, 10);
+     if (!pl_cam_get_total(&numCameras))
+     {
++        numCameras = 0;
+         ERR_TO_STATUS("pl_cam_get_total");
+     }
+-    else if (numCameras <= 0)
+-    {
+-        ERR("No cameras detected!");
++    for (i = 0; i < numCameras; i++) {
++        pl_cam_get_name(i, cameraContext.camName);
++        if (pl_cam_open(cameraContext.camName, &cameraContext.hcam, OPEN_EXCLUSIVE)) {
++            pl_get_param(cameraContext.hcam, PARAM_HEAD_SER_NUM_ALPHA, ATTR_CURRENT, (void *)serialNumberStr);
++            if (detIndex < 0 && !strcmp(serialNumberStr, deviceId)) detIndex = i;
++            fprintf(stderr, "%2d%c: %s\n", i, detIndex == i ? '*' : ' ', serialNumberStr);
++            pl_cam_close(cameraContext.hcam);
++        }
+     }
+-    else if (numCameras < deviceIndex)
++
++    if (detIndex < 0 || detIndex >= numCameras)
+     {
+-        ERR_ARGS("There are only %d detected cameras! Cannot open camera with index %d!", numCameras, deviceIndex);
++        ERR_ARGS("Camera %s not available in %d found\n", deviceId, numCameras);
+     }
+     else
+     {
++        fprintf(stderr, "\n");
+         this->cameraContext = new (std::nothrow) CameraContext();
+         if (!this->cameraContext)
+         {
+@@ -541,7 +552,7 @@
+         }
+         else
+         {
+-            pl_cam_get_name(deviceIndex, this->cameraContext->camName);
++            pl_cam_get_name(detIndex, this->cameraContext->camName);
+             if (!pl_cam_open(this->cameraContext->camName, &this->cameraContext->hcam, OPEN_EXCLUSIVE))
+             {
+                 ERR_ARGS("Failed to open camera with name %s", this->cameraContext->camName);
+@@ -557,8 +568,7 @@
+                 snprintf(fwVersionStr, 40, "%d.%d", (fwVersion >> 8) & 0xFF, (fwVersion >> 0) & 0xFF);
+                 setStringParam(ADFirmwareVersion, fwVersionStr); 
+ 
+-                pl_get_param(this->cameraContext->hcam, PARAM_CAMERA_PART_NUMBER, ATTR_CURRENT, (void *)&serialNumber);
+-                snprintf(serialNumberStr, 40, "%d", serialNumber);
++                pl_get_param(this->cameraContext->hcam, PARAM_HEAD_SER_NUM_ALPHA, ATTR_CURRENT, (void *)serialNumberStr);
+                 setStringParam(ADSerialNumber, serialNumberStr);
+ 
+                 pl_get_param(this->cameraContext->hcam, PARAM_VENDOR_NAME, ATTR_CURRENT, (void *)vendorStr);
+@@ -1164,7 +1174,7 @@
+ /* Code for iocsh registration */
+ 
+ /* pvCamConfig */
+-static const iocshArg ADKinetixConfigArg0 = {"DeviceIndex", iocshArgInt};
++static const iocshArg ADKinetixConfigArg0 = {"DeviceId", iocshArgString};
+ static const iocshArg ADKinetixConfigArg1 = {"Port name", iocshArgString};
+ static const iocshArg ADKinetixConfigArg2 = {"Max X size", iocshArgInt};
+ static const iocshArg ADKinetixConfigArg3 = {"Max Y size", iocshArgInt};
+@@ -1187,7 +1197,7 @@
+ 
+ static void configKinetixCallFunc(const iocshArgBuf *args)
+ {
+-    ADKinetixConfig(args[0].ival, args[1].sval, args[2].ival, args[3].ival, args[4].ival,
++    ADKinetixConfig(args[0].sval, args[1].sval, args[2].ival, args[3].ival, args[4].ival,
+                     args[5].ival, args[6].ival, args[7].ival, args[8].ival);
+ }
+ 
+diff -ur ADKinetix-R1-0/kinetixApp/src/ADKinetix.h ADKinetix-R1-0/kinetixApp/src/ADKinetix.h
+--- ADKinetix-R1-0/kinetixApp/src/ADKinetix.h	2024-07-26 23:54:23.000000000 +0800
++++ ADKinetix-R1-0/kinetixApp/src/ADKinetix.h	2024-08-12 18:30:00.638937187 +0800
+@@ -92,7 +92,7 @@
+ {
+ public:
+ 
+-    ADKinetix(int deviceIndex, const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType,
++    ADKinetix(const char *deviceIndex, const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType,
+                 int maxBuffers, size_t maxMemory, int priority, int stackSize);
+ 
+     /* These are the methods that we override from ADDriver */

@@ -1,0 +1,7 @@
+aravis xdma-driver
+#bitflow-driver ebus-driver firebird-driver  # need dist_srv
+#andor-sdk2 andor-sdk3 hamamatsu-sdk picam-sdk ximea-sdk  # need dist_srv
+
+# Needs dist_srv, plus GLIBC_2.29 and GLIBCXX_3.4.26.
+#pco-sdk
+

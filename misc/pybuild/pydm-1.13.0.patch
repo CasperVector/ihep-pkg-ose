@@ -1,0 +1,133 @@
+diff -ur pydm-1.13.0/pydm/utilities/__init__.py pydm-1.13.0/pydm/utilities/__init__.py
+--- pydm-1.13.0/pydm/utilities/__init__.py	2022-02-09 11:12:15.000000000 +0800
++++ pydm-1.13.0/pydm/utilities/__init__.py	2023-11-02 18:37:32.491473120 +0800
+@@ -224,7 +224,7 @@
+         extra_path = [os.path.expanduser(os.path.expandvars(x)) for x in extra_path]
+         x_path.extend(extra_path)
+ 
+-    pydm_search_path = os.getenv("PYDM_DISPLAYS_PATH", None)
++    pydm_search_path = os.getenv("PYDM_DISPLAYS_PATH", "/opt/epics/resources/ui")
+     if pydm_search_path:
+         x_path.extend(pydm_search_path.split(os.pathsep))
+ 
+diff -ur pydm-1.13.0/pydm/utilities/macro.py pydm-1.13.0/pydm/utilities/macro.py
+--- pydm-1.13.0/pydm/utilities/macro.py 2022-02-09 11:12:15.000000000 +0800
++++ pydm-1.13.0/pydm/utilities/macro.py 2023-11-02 18:07:59.053988530 +0800
+@@ -91,12 +91,16 @@
+                 if c == "=" or c == ",":
+                     name_end = i
+                     state = PRE_VAL
++                    if c == "=" and i == len(macro_string)-1:
++                        val_start = val_end = i
+             elif state == PRE_VAL:
+                 if (not quote) and (not escape) and c.isspace():
+                     continue
+                 val_start = i
+                 state = IN_VAL
+-                if i == len(macro_string)-1:
++                if c == ",":
++                    val_end = i
++                elif i == len(macro_string)-1:
+                     val_end = i+1
+             elif state == IN_VAL:
+                 if quote or escape:
+diff -ur pydm-1.13.0/pydm/widgets/base.py pydm-1.13.0/pydm/widgets/base.py
+--- pydm-1.13.0/pydm/widgets/base.py	2022-02-09 11:12:15.000000000 +0800
++++ pydm-1.13.0/pydm/widgets/base.py	2023-11-03 21:46:43.100852388 +0800
+@@ -342,7 +342,8 @@
+         """
+         self.format_string = "{}"
+         if isinstance(self.value, (int, float)):
+-            self.format_string = "{:." + str(self.precision) + "f}"
++            self.format_string = "{:g}" if self.precision < 0 \
++                else "{:." + str(self.precision) + "f}"
+         if self._show_units and self._unit != "":
+             self.format_string += " {}".format(self._unit)
+         return self.format_string
+@@ -406,7 +407,7 @@
+         # from the PV
+         if self._precision_from_pv is not None and self._precision_from_pv:
+             return
+-        if new_prec and self._prec != int(new_prec) and new_prec >= 0:
++        if new_prec and self._user_prec != int(new_prec) and new_prec >= -1:
+             self._user_prec = int(new_prec)
+             if not is_qt_designer() or config.DESIGNER_ONLINE:
+                 self.value_changed(self.value)
+diff -ur pydm-1.13.0/pydm/widgets/line_edit.py pydm-1.13.0/pydm/widgets/line_edit.py
+--- pydm-1.13.0/pydm/widgets/line_edit.py	2022-02-09 11:12:15.000000000 +0800
++++ pydm-1.13.0/pydm/widgets/line_edit.py	2023-11-02 16:34:49.402718455 +0800
+@@ -3,10 +3,10 @@
+ import ast
+ import logging
+ from functools import partial
+-from qtpy.QtWidgets import QLineEdit, QMenu, QApplication
++from qtpy.QtWidgets import QLineEdit, QTextEdit, QMenu, QApplication
+ from qtpy.QtCore import Property, Q_ENUMS
+ from .. import utilities
+-from .base import PyDMWritableWidget, TextFormatter, str_types
++from .base import PyDMWidget, PyDMWritableWidget, TextFormatter, str_types
+ from .display_format import DisplayFormat, parse_value_for_display
+ 
+ logger = logging.getLogger(__name__)
+@@ -287,3 +287,19 @@
+         else:
+             raise ValueError("invalid boolean input")
+ 
++class PyDMTextEdit(QTextEdit, PyDMWidget):
++    def __init__(self, parent=None, init_channel=None):
++        QLineEdit.__init__(self, parent)
++        PyDMWidget.__init__(self, init_channel=init_channel)
++        self._string_encoding = "utf_8"
++        self.setReadOnly(True)
++
++    def value_changed(self, new_val):
++        super(PyDMTextEdit, self).value_changed(new_val)
++        self.setText(parse_value_for_display(
++            value=new_val,
++            precision=1,
++            display_format_type=DisplayFormat.String,
++            string_encoding=self._string_encoding,
++            widget=self,
++        ))
+diff -ur pydm-1.13.0/pydm/widgets/pushbutton.py pydm-1.13.0/pydm/widgets/pushbutton.py
+--- pydm-1.13.0/pydm/widgets/pushbutton.py	2022-02-09 11:12:15.000000000 +0800
++++ pydm-1.13.0/pydm/widgets/pushbutton.py	2023-11-02 16:23:02.767402324 +0800
+@@ -59,6 +59,14 @@
+         else:
+             QPushButton.__init__(self, parent)
+         PyDMWritableWidget.__init__(self, init_channel=init_channel)
++        if "pressValue - int" not in PyDMPushButton.RULE_PROPERTIES:
++            PyDMPushButton.RULE_PROPERTIES = PyDMPushButton.RULE_PROPERTIES.copy()
++            PyDMPushButton.RULE_PROPERTIES.update({
++                "pressValue - int": ["pressValue", int],
++                "pressValue - float": ["pressValue", float],
++                "pressValue - str": ["pressValue", str],
++            })
++
+         self._pressValue = pressValue
+         self._releaseValue = releaseValue
+         self._relative = relative
+diff -ur pydm-1.13.0/pydm/widgets/qtplugins.py pydm-1.13.0/pydm/widgets/qtplugins.py
+--- pydm-1.13.0/pydm/widgets/qtplugins.py	2022-02-09 11:12:15.000000000 +0800
++++ pydm-1.13.0/pydm/widgets/qtplugins.py	2023-11-02 16:23:02.767402324 +0800
+@@ -21,7 +21,7 @@
+ from .frame import PyDMFrame
+ from .image import PyDMImageView
+ from .label import PyDMLabel
+-from .line_edit import PyDMLineEdit
++from .line_edit import PyDMLineEdit, PyDMTextEdit
+ from .logdisplay import PyDMLogDisplay
+ from .pushbutton import PyDMPushButton
+ from .related_display_button import PyDMRelatedDisplayButton
+@@ -177,6 +177,11 @@
+                                       extensions=BASE_EXTENSIONS,
+                                       icon=ifont.icon("edit"))
+ 
++# Text Edit plugin
++PyDMTextEditPlugin = qtplugin_factory(
++    PyDMTextEdit, group=WidgetCategory.DISPLAY, extensions=BASE_EXTENSIONS, icon=ifont.icon("edit")
++)
++
+ # Log Viewer
+ PyDMLogDisplayPlugin = qtplugin_factory(PyDMLogDisplay,
+                                         group=WidgetCategory.DISPLAY,

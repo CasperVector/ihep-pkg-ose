@@ -1,6 +1,6 @@
 %define repo camac
 %define commit R2-7-4
-%{meta name license=EPICS github=epics-modules version=commit,3}
+%{meta name license=EPICS github=epics-modules version=commit,4}
 
 Summary:        EPICS - CAMAC controllers and modules
 Patch0:         %{name}-2_7_4-config.patch

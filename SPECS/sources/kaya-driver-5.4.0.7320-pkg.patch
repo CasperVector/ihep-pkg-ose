@@ -1,0 +1,88 @@
+diff -Nur KAYA_Vision_Point_Setup/kaya.conf KAYA_Vision_Point_Setup/kaya.conf
+--- KAYA_Vision_Point_Setup/kaya.conf	1970-01-01 08:00:00.000000000 +0800
++++ KAYA_Vision_Point_Setup/kaya.conf	2024-07-10 16:03:39.238982284 +0800
+@@ -0,0 +1,1 @@
++/opt/KAYA_Instruments/lib
+diff -Nur KAYA_Vision_Point_Setup/kaya-module-load KAYA_Vision_Point_Setup/kaya-module-load
+--- KAYA_Vision_Point_Setup/kaya-module-load	1970-01-01 08:00:00.000000000 +0800
++++ KAYA_Vision_Point_Setup/kaya-module-load	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,8 @@
++#!/bin/sh
++rm -f /dev/predatorDevice*
++modprobe predator_driver
++grep predatorDevice /proc/devices |
++	while read major dev; do
++		mknod -m 0660 /dev/"$dev" c "$major" 0
++		chgrp video /dev/"$dev"; done
++
+diff -Nur KAYA_Vision_Point_Setup/kaya-module-make KAYA_Vision_Point_Setup/kaya-module-make
+--- KAYA_Vision_Point_Setup/kaya-module-make	1970-01-01 08:00:00.000000000 +0800
++++ KAYA_Vision_Point_Setup/kaya-module-make	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,10 @@
++#!/bin/sh -e
++
++kver="$(uname -r)"
++drvd=/var/kaya/module
++make -C /usr/src/kernels/"$kver" M="$drvd" "$@"
++if [ "$*" != clean ]; then
++	cp "$drvd"/*.ko /lib/modules/"$kver"/kernel/drivers/misc
++	depmod -a
++fi
++
+diff -Nur KAYA_Vision_Point_Setup/kaya_driver.service KAYA_Vision_Point_Setup/kaya_driver.service
+--- KAYA_Vision_Point_Setup/kaya_driver.service	1970-01-01 08:00:00.000000000 +0800
++++ KAYA_Vision_Point_Setup/kaya_driver.service	2021-07-21 13:59:41.486896677 +0800
+@@ -0,0 +1,9 @@
++[Unit]
++Description=kaya_driver
++Requires=local-fs.target
++After=local-fs.target
++
++[Service]
++Type=oneshot
++ExecStart=/usr/bin/kaya-module-load
++
+diff -Nur KAYA_Vision_Point_Setup/kaya_daemon.service KAYA_Vision_Point_Setup/kaya_daemon.service
+--- KAYA_Vision_Point_Setup/kaya_daemon.service	1970-01-01 08:00:00.000000000 +0800
++++ KAYA_Vision_Point_Setup/kaya_daemon.service	2021-07-21 13:59:41.487896677 +0800
+@@ -0,0 +1,12 @@
++[Unit]
++Description=kaya_daemon
++Requires=kaya_driver.service
++After=kaya_driver.service
++
++[Service]
++ExecStart=/usr/bin/KYService
++Restart=always
++
++[Install]
++WantedBy=multi-user.target
++
+diff -Nur KAYA_Vision_Point_Setup/KYService/KYService KAYA_Vision_Point_Setup/KYService/KYService
+--- KAYA_Vision_Point_Setup/KYService/KYService	1970-01-01 08:00:00.000000000 +0800
++++ KAYA_Vision_Point_Setup/KYService/KYService	2021-07-21 13:59:41.487896677 +0800
+@@ -0,0 +1,3 @@
++#!/bin/sh -
++exec /opt/KAYA_Instruments/lib/KYService
++
+diff -Nur KAYA_Vision_Point_Setup/PCI_drv_Linux/aclpci.c KAYA_Vision_Point_Setup/PCI_drv_Linux/aclpci.c
+--- KAYA_Vision_Point_Setup/PCI_drv_Linux/aclpci.c	2020-08-19 19:48:36.000000000 +0800
++++ KAYA_Vision_Point_Setup/PCI_drv_Linux/aclpci.c	2024-09-10 01:11:14.366247603 +0800
+@@ -54,7 +54,7 @@
+ #define USE_MSI 1
+ 
+ /* Static function declarations */
+-static int __init probe(struct pci_dev *dev, const struct pci_device_id *id);
++static int probe(struct pci_dev *dev, const struct pci_device_id *id);
+ static int __init init_chrdev (struct aclpci_dev *aclpci);
+ static void __exit remove(struct pci_dev *dev);
+ 
+@@ -456,7 +456,7 @@
+   }
+ }
+ 
+-static int __init probe(struct pci_dev *dev, const struct pci_device_id *id)
++static int probe(struct pci_dev *dev, const struct pci_device_id *id)
+ {
+ 
+   struct aclpci_dev *aclpci = 0;

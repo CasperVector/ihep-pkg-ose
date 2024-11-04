@@ -1,0 +1,368 @@
+diff -ur motorKohzu/iocs/kohzuIOC/iocBoot/iocKohzu/SC800.cmd motorKohzu/iocs/kohzuIOC/iocBoot/iocKohzu/SC800.cmd
+--- motorKohzu/iocs/kohzuIOC/iocBoot/iocKohzu/SC800.cmd	2020-05-12 05:43:51.000000000 +0800
++++ motorKohzu/iocs/kohzuIOC/iocBoot/iocKohzu/SC800.cmd	2023-03-31 03:30:59.298449606 +0800
+@@ -11,6 +11,6 @@
+ # Kohzu SC-800 motor controller configuration parameters: 
+ #     (1) controller# being configured
+ #     (2) ASYN port name
+-#     (3) address (GPIB only)
++#     (3) address (GPIB only; set to -1 for TCP/IP)
+ SC800Config(0, "serial1", 0)
+ #!var drvSC800debug 4
+diff -ur motorKohzu/iocs/kohzuIOC/kohzuApp/src/Makefile motorKohzu/iocs/kohzuIOC/kohzuApp/src/Makefile
+--- motorKohzu/iocs/kohzuIOC/kohzuApp/src/Makefile	2020-05-12 05:43:51.000000000 +0800
++++ motorKohzu/iocs/kohzuIOC/kohzuApp/src/Makefile	2023-03-31 02:59:32.369389614 +0800
+@@ -21,6 +21,7 @@
+ # Include dbd files from all support applications:
+ #ifdef ASYN
+ kohzu_DBD += asyn.dbd
++kohzu_DBD += drvAsynIPPort.dbd
+ kohzu_DBD += drvAsynSerialPort.dbd
+ #endif
+ kohzu_DBD += motorSupport.dbd
+diff -ur motorKohzu/kohzuApp/src/devSC800.cc motorKohzu/kohzuApp/src/devSC800.cc
+--- motorKohzu/kohzuApp/src/devSC800.cc	2020-05-12 05:43:51.000000000 +0800
++++ motorKohzu/kohzuApp/src/devSC800.cc	2023-03-31 02:25:24.099301000 +0800
+@@ -155,7 +155,6 @@
+     struct SC800Controller *cntrl;
+     char buff[110], polarity, *pbuff;
+     int signal, card, intval, axis;
+-    double dval, cntrl_units;
+     unsigned int size;
+     RTN_STATUS rtnval;
+     bool send;
+@@ -167,7 +166,6 @@
+ 
+     /* Protect against NULL pointer with WRTITE_MSG(GO/STOP_AXIS/GET_INFO, NULL). */
+     intval = (parms == NULL) ? 0 : NINT(parms[0]);
+-    dval = (parms == NULL) ? 0 : *parms;
+ 
+     motor_start_trans_com(mr, SC800_cards);
+ 
+@@ -181,8 +179,6 @@
+         return(rtnval = ERROR);
+ 
+     cntrl = (struct SC800Controller *) brdptr->DevicePrivate;
+-    cntrl_units = dval;
+-
+ 
+     if (SC800_table[command] > motor_call->type)
+         motor_call->type = SC800_table[command];
+@@ -207,6 +203,9 @@
+             {
+                 strcat(motor_call->message, mr->prem);
+                 strcat(motor_call->message, SC800_OUT_EOS);
++                //rtnval = motor_end_trans_com(mr, drvtabptr);
++                //rtnval = (RTN_STATUS)motor_start_trans_com(mr, SC800_cards);
++                //motor_call->type = SC800_table[command];
+     
+             }
+             if (strlen(mr->post) != 0)
+@@ -227,7 +226,7 @@
+ 
+             rtnval = write_parms(pbuff, signal, cntrl, motor_call, command, mr);
+             
+-            sprintf(buff, "RPS%d/2/1/0/%d/0/0/1", axis, intval);
++            sprintf(buff, cntrl->aries ? "RPS%d/0/%d/1" : "RPS%d/2/0/0/%d/0/0/1", axis, intval);
+             
+             break;
+         case MOVE_ABS:
+@@ -238,14 +237,14 @@
+ 
+             rtnval = write_parms(pbuff, signal, cntrl, motor_call, command, mr);
+             
+-            sprintf(buff, "APS%d/2/0/0/%d/0/0/1", axis, intval);
++            sprintf(buff, cntrl->aries ? "APS%d/0/%d/1" : "APS%d/2/0/0/%d/0/0/1", axis, intval);
+             break;
+     
+         case HOME_FOR:
+         case HOME_REV:
+             rtnval = write_parms(pbuff, signal, cntrl, motor_call, command, mr);
+ 
+-            sprintf(buff, "ORG%d/2/0/0/3/1", axis);
++            sprintf(buff, cntrl->aries ? "ORG%d/0/1" : "ORG%d/2/0/0/3/1", axis);
+             break;
+     
+         case LOAD_POS:
+@@ -287,7 +286,7 @@
+             break;
+     
+         case JOG:
+-            polarity = (intval > 0) ? '1' : '0';
++            polarity = (intval > 0) ^ cntrl->aries ? '1' : '0';
+             intval = abs(intval);
+             if (intval < 1) /* Validity check. */
+                 intval = 1;
+@@ -302,15 +301,15 @@
+ 
+             rtnval = write_parms(pbuff, signal, cntrl, motor_call, command, mr);
+     
+-            sprintf(buff, "FRP%d/2/0/0/%c/1", axis, polarity);
++            sprintf(buff, cntrl->aries ? "FRP%d/0/%c" : "FRP%d/2/0/0/%c/1", axis, polarity);
+             break;
+     
+         case ENABLE_TORQUE:
+-            sprintf(buff, "COF%d/0", axis);
++            sprintf(buff, cntrl->aries ? "WSY%d/61/1" : "COF%d/0", axis);
+             break;
+         
+         case DISABL_TORQUE:
+-            sprintf(buff, "COF%d/1", axis);
++            sprintf(buff, cntrl->aries ? "WSY%d/61/0" : "COF%d/1", axis);
+             break;
+     
+         case JOG_VELOCITY:
+@@ -352,10 +351,11 @@
+     RTN_STATUS rtnval;
+     int axis = signal + 1;
+ 
+-    sprintf(buff, "ASI%d/%d/%d/%d/%d/0/0/0/0/0/0/0/0/0", axis,
++    sprintf(buff, cntrl->aries ? "WTB%d/0/%d/%d/%d/%d/2"
++		    : "ASI%d/%d/%d/%d/%d/0/0/0/0/0/0/0/0/0", axis,
+             cntrl->base_speed[signal], cntrl->slew_speed[signal],
+             cntrl->accl_rate[signal], cntrl->accl_rate[signal]);
+-    strcpy(motor_call->message, buff);
++    strcat(motor_call->message, buff);
+     rtnval = motor_end_trans_com(mr, drvtabptr);
+     rtnval = (RTN_STATUS) motor_start_trans_com(mr, SC800_cards);
+     motor_call->type = SC800_table[command];
+diff -ur motorKohzu/kohzuApp/src/drvSC800.cc motorKohzu/kohzuApp/src/drvSC800.cc
+--- motorKohzu/kohzuApp/src/drvSC800.cc	2020-05-12 05:43:51.000000000 +0800
++++ motorKohzu/kohzuApp/src/drvSC800.cc	2023-03-31 02:51:15.127056351 +0800
+@@ -219,15 +219,19 @@
+ 
+     if (cntrl->status != NORMAL)
+ 	charcnt = recv_mess(card, buff, FLUSH);
+-
+-    sprintf(buff,"STR1/%d",(signal + 1));
+-    send_mess(card, buff, NULL);		/*  Tell Status */
++    sprintf(buff, cntrl->aries ? "STR%d" : "STR1/%d", (signal + 1));
++    send_mess(card, buff, NULL);        /*  Tell Status */
+     charcnt = recv_mess(card, buff, 1);
+-    convert_cnt = sscanf(buff, "C\tSTR%d\t1\t%d\t%d\t%d\t%d\t%d\t%d\t%d",
+-                         &str_axis, &str_move, &str_norg, &str_orgg,
+-                         &str_cwlm, &str_ccwl, &str_swng, &str_errr);
++    if (cntrl->aries)
++        convert_cnt = sscanf(buff, "C\tSTR%d\t%d\t%d\t%d\t%d\t%d\t%d",
++            &str_axis, &str_move, &str_errr, &str_orgg,
++            &str_cwlm, &str_ccwl, &motorData);
++    else
++        convert_cnt = sscanf(buff, "C\tSTR%d\t1\t%d\t%d\t%d\t%d\t%d\t%d\t%d",
++            &str_axis, &str_move, &str_norg, &str_orgg,
++            &str_cwlm, &str_ccwl, &str_swng, &str_errr);
+ 
+-    if (charcnt > 0 && convert_cnt == 8)
++    if (charcnt > 0 && convert_cnt == 8 - cntrl->aries)
+     {
+ 	cntrl->status = NORMAL;
+ 	status.Bits.CNTRL_COMM_ERR = 0;
+@@ -250,12 +254,21 @@
+ 	}
+     }
+    
+-    status.Bits.RA_DONE = (str_move == 0) ? 1 : 0;
+-    plusLS  = (str_cwlm == 1);
+-    minusLS = (str_ccwl == 1);
++    status.Bits.RA_MOVING = (str_move != 0) ? 1 : 0;
++    if (cntrl->aries) {
++        status.Bits.RA_HOME = (str_orgg != 0) ? 1 : 0;
++        status.Bits.RA_DONE = (str_move == 0) || (str_move == 2 && motorData == 1) ? 1 : 0;
++        plusLS = (str_cwlm == 2) || (str_cwlm == 3);
++        minusLS = (str_cwlm == 1) || (str_cwlm == 3);
++    } else {
++        status.Bits.RA_HOME = (str_orgg != 0 || str_norg != 0) ? 1 : 0;
++        status.Bits.RA_DONE = (str_move == 0) ? 1 : 0;
++        plusLS = (str_cwlm == 1);
++        minusLS = (str_ccwl == 1);
++    }
+ 
+    /* Parse motor position */
+-    sprintf(buff,"RDP%d/0", (signal + 1));
++    sprintf(buff, cntrl->aries ? "RDP%d" : "RDP%d/0", (signal + 1));
+     send_mess(card, buff, NULL);  /*  Tell Position */
+     recv_mess(card, buff, 1);
+     convert_cnt = sscanf(buff, "C\tRDP%d\t%d", &str_axis, &motorData);
+@@ -275,6 +288,14 @@
+         motor_info->no_motion_count = 0;
+     }
+ 
++    /* Parse encoder position */
++    sprintf(buff, cntrl->aries ? "RDE%d" : "RDE%d/0", (signal + 1));
++    send_mess(card, buff, NULL);  /*  Tell Position */
++    recv_mess(card, buff, 1);
++    convert_cnt = sscanf(buff, "C\tRDE%d\t%d", &str_axis, &motorData);
++    status.Bits.EA_PRESENT = 1;
++    motor_info->encoder_position = NINT(motorData);
++ 
+     if (nodeptr != 0) /* If moving, set direction based on commanded positon. */
+     {
+         struct motorRecord *mr = (struct motorRecord *) nodeptr->mrecord;
+@@ -284,11 +305,11 @@
+     plusdir = (status.Bits.RA_DIRECTION) ? true : false;
+ 
+     /* Torque enabled? */
+-    sprintf(buff,"RSY%d/21", (signal + 1));
++    sprintf(buff, cntrl->aries ? "RSY%d/61" : "RSY%d/21", (signal + 1));
+     send_mess(card, buff, NULL);  /*  Tell Position */
+     recv_mess(card, buff, 1);
+-    convert_cnt = sscanf(buff, "C\tRSY%d\t21\t%d", &str_axis, &str_move);
+-    status.Bits.EA_POSITION = (str_move == 0) ? 1 : 0;
++    convert_cnt = sscanf(buff, cntrl->aries ? "C\tRSY%d\t61\t%d":"C\tRSY%d\t21\t%d", &str_axis, &str_move);
++    status.Bits.EA_POSITION = (str_move == 0) ^ cntrl->aries ? 1 : 0;
+ 
+     /* Set limit switch error indicators. */
+     if (plusLS == true)
+@@ -365,15 +386,14 @@
+         return(ERROR);
+     }
+ 
+-    local_buff[0] = (char) STX;
++    cntrl = (struct SC800Controller *) motor_state[card]->DevicePrivate;
++    local_buff[0] = cntrl->serial ? (char) STX : (char) NULL;
+     local_buff[1] = (char) NULL;    /* Terminate local buffer. */
+ 
+     /* Make a local copy of the string. */
+-    strcat(&local_buff[1], com);
++    strcat(&local_buff[cntrl->serial], com);
+ 
+-    Debug(2, "send_mess(): message = %s\n", &local_buff[1]);
+-
+-    cntrl = (struct SC800Controller *) motor_state[card]->DevicePrivate;
++    Debug(2, "send_mess(): message = %s\n", &local_buff[cntrl->serial]);
+ 
+     /* flush any junk at input port - should not be any data available */
+     pasynOctetSyncIO->flush(cntrl->pasynUser);
+@@ -492,7 +512,8 @@
+     cntrl = (struct SC800Controller *) motor_state[card]->DevicePrivate;
+ 
+     strcpy(cntrl->asyn_port, name);
+-    cntrl->asyn_address = address;
++    cntrl->serial = address >= 0;
++    cntrl->asyn_address = cntrl->serial ? address : 0;
+     return(OK);
+ }
+ 
+@@ -513,7 +534,7 @@
+     int status;
+     int total_axis = 0;
+     asynStatus success_rtn;
+-    int version;
++    int model, version[3];
+     char errbase[] = "\ndrvSC800.cc:motor_init() *** ";
+ 
+     initialized = true; /* Indicate that driver is initialized. */
+@@ -553,48 +574,52 @@
+             pasynOctetSyncIO->setOutputEos(cntrl->pasynUser,
+                                            SC800_OUT_EOS,strlen(SC800_OUT_EOS));
+ 
+-            do
+-            {
++            for (status = retry = 0; status == 0 && retry < 3; retry++) {
+                 /* Read device type */
+                 send_mess(card_index, GET_IDENT, NULL);
+ 		status = recv_mess(card_index, buff, 1);
+                 if (status > 0)
+                 {
+-                    int convert_800_cnt, convert_400_cnt, convert_200_cnt;
+-
+-                    convert_800_cnt = sscanf(buff, "C\tIDN0\t800\t%d", &version);
+-                    convert_400_cnt = sscanf(buff, "C\tIDN0\t400\t%d", &version);
+-                    convert_200_cnt = sscanf(buff, "C\tIDN0\t200\t%d", &version);
+-                    if (convert_800_cnt == 1)
+-                        cntrl->model = SC800;
+-                    else if (convert_400_cnt == 1)
+-                        cntrl->model = SC400;
+-                    else if (convert_200_cnt == 1)
+-                        cntrl->model = SC200;
++                    if (sscanf(buff, "C\tIDN0\t%d\t%d", &model, &version[0]) == 2 &&
++                       (((total_axis = model / 100) == 8) || total_axis == 4 || total_axis == 2))
++                    {
++                        cntrl->aries = false;
++                    }
++                    else if (sscanf(buff, "C\tIDN\tARIES\t%d\t%d\t%d",
++                                    &version[0], &version[1], &version[2]) == 3)
++                    {
++                        cntrl->aries = true;
++                    }
+                     else
+                         status = 0;
+                 }
+-		retry++;
+-	    } while (status == 0 && retry < 3);
++            }
++            if (cntrl->aries) for (status = retry = 0; status == 0 && retry < 3; retry++) {
++                send_mess(card_index, "RAX", NULL);
++                status = recv_mess(card_index, buff, 1);
++                if (status > 0) {
++                    int devices, nums[8];
++                    if (sscanf(buff, "C\tRAX\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d",
++                               &devices, &total_axis, &nums[0], &nums[1], &nums[2],
++                               &nums[3], &nums[4], &nums[5], &nums[6], &nums[7]) != 10)
++                    {
++                        status = 0;
++                    }
++                }
++            }
+ 	}
+ 
+ 	if (success_rtn == asynSuccess && status > 0)
+ 	{
+             cntrl->status = NORMAL;
+-            if (cntrl->model == SC800)
+-            {
+-                sprintf(brdptr->ident, "SC-800 Ver%d", version);
+-                total_axis = 8;
+-            }
+-            else if (cntrl->model == SC400)
++            if (cntrl->aries)
+             {
+-                sprintf(brdptr->ident, "SC-400 Ver%d", version);
+-                total_axis = 4;
++                sprintf(brdptr->ident, "ARIES Ver%d.%d.%d (%d axes connected)",
++                        version[0], version[1], version[2], total_axis);
+             }
+-            else if (cntrl->model == SC200)
++            else
+             {
+-                sprintf(brdptr->ident, "SC-200 Ver%d", version);
+-                total_axis = 2;
++                sprintf(brdptr->ident, "SC-%d Ver%d", model, version[0]);
+             }
+             brdptr->total_axis = total_axis;
+ 	    
+diff -ur motorKohzu/kohzuApp/src/drvSC800.h motorKohzu/kohzuApp/src/drvSC800.h
+--- motorKohzu/kohzuApp/src/drvSC800.h	2020-05-12 05:43:51.000000000 +0800
++++ motorKohzu/kohzuApp/src/drvSC800.h	2023-03-31 00:42:02.010537000 +0800
+@@ -45,7 +45,7 @@
+ #include "asynDriver.h"
+ #include "asynOctetSyncIO.h"
+ 
+-#define SC800_MAX_MOTORS  8
++#define SC800_MAX_MOTORS  32
+ #define SC800_MSG_SIZE 80
+ #define SC800_STATUS_RETRY 10
+ 
+@@ -53,13 +53,6 @@
+ #define SC800_OUT_EOS   "\r\n" /* Command */
+ #define SC800_IN_EOS    "\r\n"  /* Reply */
+ 
+-enum SC_model
+-{
+-    SC800,
+-    SC400,
+-    SC200
+-};
+-
+ /* Motion Master specific data is stored in this structure. */
+ struct SC800Controller
+ {
+@@ -71,7 +64,8 @@
+     int base_speed[SC800_MAX_MOTORS]; /* steps/sec. */
+     int slew_speed[SC800_MAX_MOTORS]; /* steps/sec. */
+     int accl_rate[SC800_MAX_MOTORS];  /* steps/(sec^2) */
+-    SC_model model;		/* SC model ID. */
++    bool aries;		/* ARIES or not */
++    bool serial;		/* Serial/GPIB or (TCP) not */
+ };
+ 
+ 

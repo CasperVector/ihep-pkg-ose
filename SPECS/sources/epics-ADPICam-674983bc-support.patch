@@ -1,0 +1,61 @@
+diff -ur ADPICam/iocs/PICamIOC/iocBoot/iocPICam/Makefile ADPICam/iocs/PICamIOC/iocBoot/iocPICam/Makefile
+--- ADPICam/iocs/PICamIOC/iocBoot/iocPICam/Makefile	2022-09-13 02:57:08.000000000 +0800
++++ ADPICam/iocs/PICamIOC/iocBoot/iocPICam/Makefile	2022-09-15 21:33:29.041265711 +0800
+@@ -3,7 +3,8 @@
+ #ARCH = win32-x86
+ #ARCH = win32-x86-debug
+ #ARCH = windows-x64
+-ARCH = windows-x64-debug
++#ARCH = windows-x64-debug
+ #ARCH = linux-x86
++ARCH = linux-x86_64
+ TARGETS = envPaths
+ include $(TOP)/configure/RULES.ioc
+diff -ur ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd
+--- ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd	2022-09-13 02:57:08.000000000 +0800
++++ ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd	2022-09-21 17:11:41.494471105 +0800
+@@ -11,6 +11,8 @@
+ epicsEnvSet("XSIZE",  "2048")
+ epicsEnvSet("YSIZE",  "2048")
+ epicsEnvSet("NCHANS", "2048")
++epicsEnvSet("CBUFFS", "500")
++epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db")
+ 
+ # Create a PICam driver
+ # PICamConfig(const char *portName, IDType, IDValue, maxBuffers, size_t maxMemory, int priority, int stackSize)
+@@ -30,7 +32,7 @@
+ # Create a standard arrays plugin, set it to get data from Driver.
+ NDStdArraysConfigure("Image1", 3, 0, "$(PORT)", 0)
+ dbLoadRecords("$(ADCORE)/db/NDPluginBase.template","P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,NDARRAY_PORT=$(PORT),NDARRAY_ADDR=0")
+-dbLoadRecords("$(ADCORE)/db/NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,TYPE=Int16,SIZE=16,FTVL=SHORT,NELEMENTS=20000000")
++dbLoadRecords("$(ADCORE)/db/NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,NDARRAY_PORT=$(PORT),TYPE=Int16,SIZE=16,FTVL=SHORT,NELEMENTS=20000000")
+ 
+ # Load all other plugins using commonPlugins.cmd
+ < $(ADCORE)/iocBoot/commonPlugins.cmd
+diff -ur ADPICam/iocs/PICamIOC/PICamApp/src/Makefile ADPICam/iocs/PICamIOC/PICamApp/src/Makefile
+--- ADPICam/iocs/PICamIOC/PICamApp/src/Makefile	2022-09-13 02:57:08.000000000 +0800
++++ ADPICam/iocs/PICamIOC/PICamApp/src/Makefile	2022-09-15 21:32:57.732210312 +0800
+@@ -11,10 +11,6 @@
+ DBD += $(PROD_NAME).dbd
+ $(PROD_NAME)_DBD += PICamSupport.dbd
+ 
+-# Specify link locations of installed PICAM and genicam software
+-$(PROD_NAME)_LDFLAGS_Linux += -L/opt/pleora/ebus_sdk/x86_64/lib/genicam/bin/Linux64_x64 -Wl,-rpath,/opt/pleora/ebus_sdk/x86_64/lib/genicam/bin/Linux64_x64
+-$(PROD_NAME)_LDFLAGS_Linux += -L/opt/pleora/ebus_sdk/x86_64/lib -Wl,-rpath,/opt/pleora/ebus_sdk/x86_64/lib
+-
+ # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
+ $(PROD_NAME)_SRCS += $(PROD_NAME)_registerRecordDeviceDriver.cpp $(PROD_NAME)Main.cpp
+ 
+diff -ur ADPICam/Makefile ADPICam/Makefile
+--- ADPICam/Makefile	2022-09-13 02:57:08.000000000 +0800
++++ ADPICam/Makefile	2022-09-15 21:32:57.732210312 +0800
+@@ -3,9 +3,7 @@
+ include $(TOP)/configure/CONFIG
+ DIRS := $(DIRS) configure
+ DIRS := $(DIRS) PICamApp
+-DIRS := $(DIRS) PICamSupport
+ 
+-PICamApp_DEPEND_DIRS += PICamSupport
+ ifeq ($(BUILD_IOCS), YES)
+ DIRS := $(DIRS) $(filter-out $(DIRS), $(wildcard iocs))
+ iocs_DEPEND_DIRS += PICamApp

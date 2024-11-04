@@ -1,0 +1,71 @@
+diff --git a/motorApp/Db/asyn_motor.db b/motorApp/Db/asyn_motor.db
+index e7089228..7da9aa78 100644
+--- a/motorApp/Db/asyn_motor.db
++++ b/motorApp/Db/asyn_motor.db
+@@ -87,6 +87,16 @@ record(ao,"$(P)$(M)Resolution") {
+     field(PREC, "$(PREC)")
+ }
+ 
++# Encoder resolution for this axis
++record(ao,"$(P)$(M)EncoderResolution") {
++    field(DESC, "$(M) encoder resolution")
++    field(DOL,  "$(P)$(M).ERES CP MS")
++    field(OMSL, "closed_loop")
++    field(DTYP, "asynFloat64")
++    field(OUT,  "@asyn($(PORT),$(ADDR))MOTOR_REC_ENCODER_RESOLUTION")
++    field(PREC, "$(PREC)")
++}
++
+ #! Further lines contain data used by VisualDCT
+ #! View(405,484,0.9)
+ #! Record("$(P)$(M)",840,675,0,0,"$(P)$(M)")
+diff --git a/motorApp/Db/basic_asyn_motor.db b/motorApp/Db/basic_asyn_motor.db
+index a1859804..177b7a30 100644
+--- a/motorApp/Db/basic_asyn_motor.db
++++ b/motorApp/Db/basic_asyn_motor.db
+@@ -53,3 +53,13 @@ record(ao,"$(P)$(M)Resolution") {
+     field(PREC, "$(PREC)")
+ }
+ 
++# Encoder resolution for this axis
++record(ao,"$(P)$(M)EncoderResolution") {
++    field(DESC, "$(M) encoder resolution")
++    field(DOL,  "$(P)$(M).ERES CP MS")
++    field(OMSL, "closed_loop")
++    field(DTYP, "asynFloat64")
++    field(OUT,  "@asyn($(PORT),$(ADDR))MOTOR_REC_ENCODER_RESOLUTION")
++    field(PREC, "$(PREC)")
++}
++
+diff --git a/motorApp/MotorSrc/asynMotorController.cpp b/motorApp/MotorSrc/asynMotorController.cpp
+index e5d069d5..8f664bc5 100644
+--- a/motorApp/MotorSrc/asynMotorController.cpp
++++ b/motorApp/MotorSrc/asynMotorController.cpp
+@@ -99,6 +99,7 @@ asynMotorController::asynMotorController(const char *portName, int numAxes, int
+ 
+   // These are per-axis parameters for passing additional motor record information to the driver
+   createParam(motorRecResolutionString,        asynParamFloat64,      &motorRecResolution_);
++  createParam(motorRecEncoderResolutionString, asynParamFloat64,      &motorRecEncoderResolution_);
+   createParam(motorRecDirectionString,           asynParamInt32,      &motorRecDirection_);
+   createParam(motorRecOffsetString,            asynParamFloat64,      &motorRecOffset_);
+ 
+diff --git a/motorApp/MotorSrc/asynMotorController.h b/motorApp/MotorSrc/asynMotorController.h
+index bbcfa8e9..2ce0495f 100644
+--- a/motorApp/MotorSrc/asynMotorController.h
++++ b/motorApp/MotorSrc/asynMotorController.h
+@@ -64,6 +64,7 @@
+ 
+ /* These are per-axis parameters for passing additional motor record information to the driver */
+ #define motorRecResolutionString        "MOTOR_REC_RESOLUTION"
++#define motorRecEncoderResolutionString "MOTOR_REC_ENCODER_RESOLUTION"
+ #define motorRecDirectionString         "MOTOR_REC_DIRECTION"
+ #define motorRecOffsetString            "MOTOR_REC_OFFSET"
+ 
+@@ -248,6 +249,7 @@ class epicsShareClass asynMotorController : public asynPortDriver {
+ 
+   // These are per-axis parameters for passing additional motor record information to the driver
+   int motorRecResolution_;
++  int motorRecEncoderResolution_;
+   int motorRecDirection_;
+   int motorRecOffset_;
+ 

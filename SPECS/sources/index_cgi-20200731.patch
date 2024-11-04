@@ -1,0 +1,182 @@
+--- httpd_indexcgi.c	2021-12-27 00:53:21.000000000 +0800
++++ httpd_indexcgi.c	2022-07-28 14:27:00.067659782 +0800
+@@ -10,19 +10,8 @@
+  */
+ 
+ /* Build a-la
+-i486-linux-uclibc-gcc \
+--static -static-libgcc \
+--D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 \
+--Wall -Wshadow -Wwrite-strings -Wundef -Wstrict-prototypes -Werror \
+--Wold-style-definition -Wdeclaration-after-statement -Wno-pointer-sign \
+--Wmissing-prototypes -Wmissing-declarations \
+--Os -fno-builtin-strlen -finline-limit=0 -fomit-frame-pointer \
+--ffunction-sections -fdata-sections -fno-guess-branch-probability \
+--funsigned-char \
+--falign-functions=1 -falign-jumps=1 -falign-labels=1 -falign-loops=1 \
+--march=i386 -mpreferred-stack-boundary=2 \
+--Wl,-Map -Wl,link.map -Wl,--warn-common -Wl,--sort-common -Wl,--gc-sections \
+-httpd_indexcgi.c -o index.cgi
++gcc -static -Wall -Os -mtune=generic \
++  -funsigned-char httpd_indexcgi.c -o index.cgi
+ */
+ 
+ /* We don't use printf, as it pulls in >12 kb of code from uclibc (i386). */
+@@ -52,42 +41,25 @@
+  * to elements. Edit stylesheet to your liking and recompile. */
+ 
+ #define STYLE_STR \
+-"<style>"                                              \
+-"table {"                                              \
+-  "width:100%;"                                        \
+-  "background-color:#fff5ee;"                          \
+-  "border-width:1px;" /* 1px 1px 1px 1px; */           \
+-  "border-spacing:2px;"                                \
+-  "border-style:solid;" /* solid solid solid solid; */ \
+-  "border-color:black;" /* black black black black; */ \
+-  "border-collapse:collapse"                           \
+-"}"                                                    \
+-"th {"                                                 \
+-  "border-width:1px;" /* 1px 1px 1px 1px; */           \
+-  "padding:1px;" /* 1px 1px 1px 1px; */                \
+-  "border-style:solid;" /* solid solid solid solid; */ \
+-  "border-color:black" /* black black black black; */  \
+-"}"                                                    \
+-"td {"                                                 \
+-             /* top right bottom left */               \
+-  "border-width:0 1px 0 1px;"                          \
+-  "padding:1px;" /* 1px 1px 1px 1px; */                \
+-  "border-style:solid;" /* solid solid solid solid; */ \
+-  "border-color:black;" /* black black black black; */ \
+-  "white-space:nowrap"                                 \
+-"}"                                                    \
+-"tr:nth-child(odd) { background-color:#ffffff }"       \
+-"tr.hdr { background-color:#eee5de }"                  \
+-"tr.foot { background-color:#eee5de }"                 \
+-"th.cnt { text-align:left }"                           \
+-"th.sz { text-align:right }"                           \
+-"th.dt { text-align:right }"                           \
+-"td.sz { text-align:right }"                           \
+-"td.dt { text-align:right }"                           \
+-"col.nm { width:98% }"                                 \
+-"col.sz { width:1% }"                                  \
+-"col.dt { width:1% }"                                  \
+-"</style>"                                             \
++"<style>\n" \
++"table { " \
++  "border:1px #a0a0a0 solid; " \
++  "border-spacing:2px; " \
++  "border-collapse:collapse; " \
++  "text-align:left; }\n" \
++"th { " \
++  "border:#a0a0a0 solid; " \
++  "border-width:1px 0px 1px 0px; " \
++  "padding:0.1em 0.5em; }\n" \
++"td { " \
++  "border:0px; " \
++  "white-space:nowrap; " \
++  "padding:0.1em 0.5em; }\n" \
++"tr.hdr,tr.foot { background-color:#eee5de; } " \
++  "tr:nth-child(odd) { background-color:#fff5ee; }\n" \
++"table { width:100%; } col.nm { width:55%; } " \
++  "col.sz { width:20%; } col.dt { width:25%; }\n" \
++"</style>"
+ 
+ typedef struct dir_list_t {
+ 	char  *dl_name;
+@@ -216,9 +188,6 @@
+ 	dir_list_t *dir_list;
+ 	dir_list_t *cdir;
+ 	unsigned dir_list_count;
+-	unsigned count_dirs;
+-	unsigned count_files;
+-	unsigned long long size_total;
+ 	DIR *dirp;
+ 	char *location;
+ 
+@@ -273,35 +242,26 @@
+ 	fmt_str(
+ 		"" /* Additional headers (currently none) */
+ 		"\r\n" /* Mandatory empty line after headers */
+-		"<html><head><title>Index of ");
++		"<!DOCTYPE html><html><head><meta http-equiv=\"Content-Type\" "
++		"content=\"text/html; charset=UTF-8\"/>"
++		STYLE_STR "<title>Index of ");
+ 	/* Guard against directories with &, > etc */
+ 	fmt_html(location);
+ 	fmt_str(
+-		"</title>\n"
+-		STYLE_STR
+-		"</head>" "\n"
+-		"<body>" "\n"
+-		"<h1>Index of ");
++		"</title></head>\n" "<body><h1>Index of ");
+ 	fmt_html(location);
+ 	fmt_str(
+ 		"</h1>" "\n"
+-		"<table>" "\n"
+-		"<col class=nm><col class=sz><col class=dt>" "\n"
+-		"<tr class=hdr><th class=cnt>Name<th class=sz>Size<th class=dt>Last modified" "\n");
+-
+-	count_dirs = 0;
+-	count_files = 0;
+-	size_total = 0;
++		"<table>" "<colgroup><col class=nm>"
++		"<col class=sz><col class=dt></colgroup>" "\n"
++		"<tr class=hdr><th class=cnt>Name</th><th class=sz>Size</th>"
++		"<th class=dt>Last modified</th></tr>" "\n");
++
+ 	cdir = dir_list;
+ 	while (dir_list_count--) {
+ 		struct tm *ptm;
+ 
+-		if (S_ISDIR(cdir->dl_mode)) {
+-			count_dirs++;
+-		} else if (S_ISREG(cdir->dl_mode)) {
+-			count_files++;
+-			size_total += cdir->dl_size;
+-		} else
++		if (!(S_ISDIR(cdir->dl_mode) || S_ISREG(cdir->dl_mode)))
+ 			goto next;
+ 
+ 		fmt_str("<tr><td class=nm><a href='");
+@@ -312,10 +272,12 @@
+ 		fmt_html(cdir->dl_name); /* &lt; etc */
+ 		if (S_ISDIR(cdir->dl_mode))
+ 			*dst++ = '/';
+-		fmt_str("</a><td class=sz>");
++		fmt_str("</a></td><td class=sz>");
+ 		if (S_ISREG(cdir->dl_mode))
+ 			fmt_ull(cdir->dl_size);
+-		fmt_str("<td class=dt>");
++		else
++			fmt_str("-");
++		fmt_str("</td><td class=dt>");
+ 		ptm = gmtime(&cdir->dl_mtime);
+ 		fmt_04u(1900 + ptm->tm_year); *dst++ = '-';
+ 		fmt_02u(ptm->tm_mon + 1); *dst++ = '-';
+@@ -323,22 +285,13 @@
+ 		fmt_02u(ptm->tm_hour); *dst++ = ':';
+ 		fmt_02u(ptm->tm_min); *dst++ = ':';
+ 		fmt_02u(ptm->tm_sec);
+-		*dst++ = '\n';
++		fmt_str("</td></tr>\n");
+ 
+  next:
+ 		cdir++;
+ 	}
+ 
+-	fmt_str("<tr class=foot><th class=cnt>Files: ");
+-	fmt_ull(count_files);
+-	/* count_dirs - 1: we don't want to count ".." */
+-	fmt_str(", directories: ");
+-	fmt_ull(count_dirs - 1);
+-	fmt_str("<th class=sz>");
+-	fmt_ull(size_total);
+-	fmt_str("<th class=dt>\n");
+-	/* "</table></body></html>" - why bother? */
++	fmt_str("</table></body></html>\n");
+ 	guarantee(BUFFER_SIZE * 2); /* flush */
+-
+ 	return 0;
+ }

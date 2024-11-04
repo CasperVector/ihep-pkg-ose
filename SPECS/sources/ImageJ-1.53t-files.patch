@@ -1,0 +1,22 @@
+diff -Nur ImageJ/ImageJ.desktop ImageJ/ImageJ.desktop
+--- ImageJ/ImageJ.desktop	1970-01-01 08:00:00.000000000 +0800
++++ ImageJ/ImageJ.desktop	2022-11-06 21:37:34.200555809 +0800
+@@ -0,0 +1,8 @@
++[Desktop Entry]
++Name=ImageJ
++Exec=ImageJ
++Icon=ImageJ
++Terminal=false
++Categories=Graphics;
++Type=Application
++
+diff -Nur ImageJ/ImageJ.sh ImageJ/ImageJ.sh
+--- ImageJ/ImageJ.sh	1970-01-01 08:00:00.000000000 +0800
++++ ImageJ/ImageJ.sh	2022-11-06 21:34:58.166443183 +0800
+@@ -0,0 +1,6 @@
++#!/bin/sh -e
++
++cd /opt/ImageJ
++exec /usr/lib/jvm/jre-1.8.0-openjdk/bin/java \
++	${IMAGEJ_OPTS:-'-Xmx2048m'} -jar ij.jar "$@"
++

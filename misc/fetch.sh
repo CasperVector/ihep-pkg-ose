@@ -10,6 +10,7 @@ filter() {
 
 mkdir /tmp/fetch
 cat "$1" > /tmp/fetch/default.lst
+filter forgejo '^fetch://codeberg\.org/'
 filter proxy '^https://example\.com/'
 for name in $handles; do
 	./misc/fetch/"$name".sh /tmp/fetch/"$name".lst; done

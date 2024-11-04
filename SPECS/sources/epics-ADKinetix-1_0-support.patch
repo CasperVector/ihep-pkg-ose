@@ -1,0 +1,45 @@
+diff -ur ADKinetix-R1-0/iocs/kinetixIOC/kinetixApp/src/Makefile ADKinetix-R1-0/iocs/kinetixIOC/kinetixApp/src/Makefile
+--- ADKinetix-R1-0/iocs/kinetixIOC/kinetixApp/src/Makefile	2024-07-26 23:54:23.000000000 +0800
++++ ADKinetix-R1-0/iocs/kinetixIOC/kinetixApp/src/Makefile	2024-07-27 12:59:18.618493148 +0800
+@@ -29,7 +29,7 @@
+ ifeq ($(STATIC_BUILD),YES)
+   $(PROD_NAME)_SYS_LIBS_Linux += pvcam
+ else
+-  $(PROD_NAME)_LIBS_Linux += pvcam
++  $(PROD_NAME)_SYS_LIBS_Linux += pvcam
+ endif
+ 
+ include $(ADCORE)/ADApp/commonDriverMakefile
+diff -ur ADKinetix-R1-0/kinetixApp/src/Makefile ADKinetix-R1-0/kinetixApp/src/Makefile
+--- ADKinetix-R1-0/kinetixApp/src/Makefile	2024-07-26 23:54:23.000000000 +0800
++++ ADKinetix-R1-0/kinetixApp/src/Makefile	2024-07-27 12:55:19.757859494 +0800
+@@ -10,6 +10,7 @@
+ 
+ USR_CFLAGS_WIN32 +=   -DWIN32
+ USR_CXXFLAGS_WIN32 += -DWIN32
++USR_INCLUDES += -I/usr/include/pvcam
+ 
+ LIBRARY_IOC_WIN32 = $(LIBRARY_NAME)
+ LIBRARY_IOC_Linux = $(LIBRARY_NAME)
+@@ -20,7 +21,7 @@
+ #Add required libraries
+ 
+ LIB_LIBS_WIN32 += pvcam64
+-LIB_LIBS_LINUX += pvcam
++LIB_SYS_LIBS_LINUX += pvcam
+ 
+ DBD += kinetixSupport.dbd
+ 
+diff -ur ADKinetix-R1-0/Makefile ADKinetix-R1-0/Makefile
+--- ADKinetix-R1-0/Makefile	2024-07-26 23:54:23.000000000 +0800
++++ ADKinetix-R1-0/Makefile	2024-07-27 12:54:53.777355503 +0800
+@@ -2,9 +2,7 @@
+ TOP = .
+ include $(TOP)/configure/CONFIG
+ DIRS := $(DIRS) configure
+-DIRS := $(DIRS) kinetixSupport
+ DIRS := $(DIRS) kinetixApp
+-kinetixApp_DEPEND_DIRS += kinetixSupport
+ ifeq ($(BUILD_IOCS), YES)
+ DIRS := $(DIRS) $(filter-out $(DIRS), $(wildcard iocs))
+ iocs_DEPEND_DIRS += kinetixApp

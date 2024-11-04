@@ -1,0 +1,25 @@
+diff -ur procServControl-orig/configure/RELEASE procServControl/configure/RELEASE
+--- procServControl-orig/configure/RELEASE	2022-11-07 10:00:38.728261696 +0800
++++ procServControl/configure/RELEASE	2022-11-07 10:00:22.427999851 +0800
+@@ -3,6 +3,8 @@
+ SNCSEQ=$(SUPPORT)/seq
+ ASYN=$(SUPPORT)/asyn
+ BUSY=$(SUPPORT)/busy
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ 
+ EPICS_BASE=/opt/epics/base
+ 
+diff -ur procServControl-orig/procServControlApp/src/Makefile procServControl/procServControlApp/src/Makefile
+--- procServControl-orig/procServControlApp/src/Makefile	2022-11-07 09:39:52.056234000 +0800
++++ procServControl/procServControlApp/src/Makefile	2022-11-07 09:58:35.026274492 +0800
+@@ -14,7 +14,9 @@
+ 
+ procServControlApp_DBD += base.dbd asyn.dbd drvAsynIPPort.dbd
+ procServControlApp_DBD += busySupport.dbd procServControl.dbd
++procServControlApp_DBD += asSupport.dbd devIocStats.dbd
+ procServControlApp_LIBS += seq pv asyn busy procServControl
++procServControlApp_LIBS += autosave devIocStats
+ procServControlApp_LIBS += $(EPICS_BASE_IOC_LIBS)
+ 
+ include $(TOP)/configure/RULES

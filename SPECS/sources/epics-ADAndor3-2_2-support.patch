@@ -1,0 +1,13 @@
+diff -ur ADAndor3/Makefile ADAndor3/Makefile
+--- ADAndor3/Makefile	2020-02-20 22:00:42.000000000 +0800
++++ ADAndor3/Makefile	2022-09-15 20:13:33.931392614 +0800
+@@ -2,9 +2,7 @@
+ TOP = .
+ include $(TOP)/configure/CONFIG
+ DIRS := $(DIRS) configure
+-DIRS := $(DIRS) andor3Support
+ DIRS := $(DIRS) andor3App
+-andor3App_DEPEND_DIRS += andor3Support
+ ifeq ($(BUILD_IOCS), YES)
+ DIRS := $(DIRS) $(filter-out $(DIRS), $(wildcard iocs))
+ iocs_DEPEND_DIRS += andor3App

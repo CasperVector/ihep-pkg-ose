@@ -1,0 +1,97 @@
+diff -ur ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd
+--- ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd	2022-09-22 13:04:02.473673000 +0800
++++ ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd	2022-09-22 13:07:30.898058502 +0800
+@@ -40,6 +40,9 @@
+ 
+ #asynSetTraceMask($(PORT),0,0x09)
+ iocInit()
++dbpf $(PREFIX)cam1:SizeX $(XSIZE)
++dbpf $(PREFIX)cam1:SizeY $(YSIZE)
++epicsThreadSleep 4
+ 
+ # save things every thirty seconds
+ create_monitor_set("auto_settings.req", 30, "P=$(PREFIX)")
+diff -ur ADPICam/PICamApp/Db/PICam.template ADPICam/PICamApp/Db/PICam.template
+--- ADPICam/PICamApp/Db/PICam.template	2022-09-16 01:46:28.000000000 +0800
++++ ADPICam/PICamApp/Db/PICam.template	2022-10-14 11:06:47.814249558 +0800
+@@ -2718,7 +2718,6 @@
+ 
+ record(mbbo, "$(P)$(R)ReadoutPortCount")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_READOUT_PORT_COUNT")
+    field(VAL,  "1")
+@@ -3165,7 +3164,6 @@
+ ################## Sensor Layout
+ record(longout, "$(P)$(R)ActiveBottomMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_BOTTOM_MARGIN")
+ }
+@@ -3179,7 +3177,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveHeight")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_HEIGHT")
+ }
+@@ -3193,7 +3190,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveLeftMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_LEFT_MARGIN")
+ }
+@@ -3207,7 +3203,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveRightMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_RIGHT_MARGIN")
+ }
+@@ -3221,7 +3216,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveTopMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_TOP_MARGIN")
+ }
+@@ -3235,7 +3229,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveWidth")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_WIDTH")
+ }
+diff -ur ADPICam/PICamApp/src/ADPICam.cpp ADPICam/PICamApp/src/ADPICam.cpp
+--- ADPICam/PICamApp/src/ADPICam.cpp	2022-09-16 01:46:28.000000000 +0800
++++ ADPICam/PICamApp/src/ADPICam.cpp	2022-09-22 13:08:48.214201211 +0800
+@@ -3770,8 +3770,8 @@
+         }
+         else {
+ 
+-        	if (minX < 1) {
+-                minX = 1;
++        	if (minX < 0) {
++                minX = 0;
+             } else if (minX > numXPixels-binX) {
+             	minX = numXPixels;
+             }
+@@ -3809,8 +3809,8 @@
+         }
+         else {
+ 
+-        	if (minY < 1){
+-				minY = 1;
++        	if (minY < 0){
++				minY = 0;
+ 			}
+ 			else if (minY > numYPixels){
+ 				minY = numYPixels;

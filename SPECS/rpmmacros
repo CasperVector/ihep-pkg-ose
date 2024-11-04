@@ -21,6 +21,8 @@
 %_mask_opi cd %{buildroot}%{etop_res}; rm -f */test.* %{?opimask}; cd -
 %_my_patch for s in %{?mypatches}; do patch -p1 < "$s"; done
 
+%dist_srv http://127.0.0.1:8888/dist
+%codeberg_archive() fetch://codeberg.org/%1/%2/archive/%3/%2-%3.tar.gz
 %github_archive() https://github.com/%1/%2/archive/%3/%2-%3.tar.gz
 %github_archive_ver() https://github.com/%1/%2/archive/%4%3/%2-%3.tar.gz
 %meta() %{expand:%(%{_specdir}/fn-meta.py %*)}

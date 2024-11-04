@@ -1,0 +1,25 @@
+diff -ur ADAndor/iocs/andorIOC/andorApp/src/Makefile ADAndor/iocs/andorIOC/andorApp/src/Makefile
+--- ADAndor/iocs/andorIOC/andorApp/src/Makefile	2022-02-10 20:40:38.000000000 +0800
++++ ADAndor/iocs/andorIOC/andorApp/src/Makefile	2022-09-15 20:25:48.957614187 +0800
+@@ -42,7 +42,7 @@
+ # Note: we use PROD_SYS_LIBS because we are building statically but this library is only provided in dynamic
+ # format (.so)
+ PROD_SYS_LIBS_Linux += andor
+-PROD_SYS_LIBS_Linux += shamrockcif
++PROD_SYS_LIBS_Linux += atspectrograph
+ 
+ include $(ADCORE)/ADApp/commonDriverMakefile
+ 
+diff -ur ADAndor/Makefile ADAndor/Makefile
+--- ADAndor/Makefile	2022-02-10 20:40:38.000000000 +0800
++++ ADAndor/Makefile	2022-09-15 20:24:06.592955428 +0800
+@@ -2,9 +2,7 @@
+ TOP = .
+ include $(TOP)/configure/CONFIG
+ DIRS := $(DIRS) configure
+-DIRS := $(DIRS) andorSupport
+ DIRS := $(DIRS) andorApp
+-andorApp_DEPEND_DIRS += andorSupport
+ ifeq ($(BUILD_IOCS), YES)
+ DIRS := $(DIRS) $(filter-out $(DIRS), $(wildcard iocs))
+ iocs_DEPEND_DIRS += andorApp

@@ -1,0 +1,344 @@
+diff -ur ADPICam/PICamApp/src/ADPICam.cpp ADPICam/PICamApp/src/ADPICam.cpp
+--- ADPICam/PICamApp/src/ADPICam.cpp	2022-09-16 01:46:28.000000000 +0800
++++ ADPICam/PICamApp/src/ADPICam.cpp	2022-10-14 11:58:43.547010343 +0800
+@@ -188,8 +188,7 @@
+             			"No detectors were available and cannot connect to "
+             			"demo camera %s. Cannot run without a detector. \n"
+             			"-------------------------------------------------\n",
+-						demoModelName,
+-						errorString);
++						demoModelName);
+             	Picam_DestroyString(demoModelName);
+             	Picam_DestroyString(errorString);
+             	return;
+@@ -1116,7 +1115,8 @@
+ 			Picam_GetEnumerationString(PicamEnumeratedType_Error,
+ 					error, &errString);
+ 			asynPrint(pasynUser, ASYN_TRACE_ERROR,
+-					"%s:%s Trouble determining if parameter is relevant: %s\n");
++					"%s:%s Trouble determining if parameter is relevant: %s\n",
++                    driverName, functionName, errString);
+ 			return asynError;
+ 		}
+ 		if (parameterRelevant){
+@@ -1263,10 +1263,10 @@
+                     Picam_DestroyString(errorString);
+                 }
+                 fprintf(fp, "--- ROI Constraints\n"
+-                        "----- X min %d, X max %d\n"
+-                        "----- Y min %d, Y max %d\n"
+-                        "----- width min %d,  width max %d\n"
+-                        "----- height %d, height max %d\n"
++                        "----- X min %f, X max %f\n"
++                        "----- Y min %f, Y max %f\n"
++                        "----- width min %f,  width max %f\n"
++                        "----- height min %f, height max %f\n"
+                         "----- Rules 0x%x\n",
+                         //			"--X bin min %d, X bin max %d\n"
+                         //			"--Y bin min %d, Y bin max %d\n",
+@@ -1335,7 +1335,7 @@
+                 case PicamValueType_LargeInteger:
+                     for (int cc = 0; cc < collectionConstraint->values_count;
+                             cc++) {
+-                        fprintf(fp, "------ %d\n",
++                        fprintf(fp, "------ %ld\n",
+                                 (pi64s) collectionConstraint->values_array[cc]);
+                     }
+                     break;
+@@ -1770,11 +1770,11 @@
+                 error,
+                 &errorString);
+         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-                "%s:%s Error Setting accquisition buffer with size %d: %s\n",
++                "%s:%s Error Setting accquisition buffer with size %ld: %s\n",
+                 driverName,
+                 functionName,
+-                errorString,
+-                buffer_.size());
++                buffer_.size(),
++                errorString);
+         Picam_DestroyString(errorString);
+         setIntegerParam(ADAcquire, 0);
+         setIntegerParam(ADStatus, ADStatusError);
+@@ -2403,7 +2403,7 @@
+                         break;
+                     case PicamValueType_LargeInteger:
+                         char largeIntString[12];
+-                        sprintf(largeIntString, "%d",
++                        sprintf(largeIntString, "%ld",
+                                 (pi64s)constraints->values_array[ii]);
+                         strings[*nIn] = epicsStrDup(largeIntString);
+                         values[*nIn] = (int)constraints->values_array[ii];
+@@ -2483,7 +2483,7 @@
+     acqStatusErrors = acqStatus->errors;
+     acqStatusReadoutRate = acqStatus->readout_rate;
+     asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+-            "%s:%s available %d\n",
++            "%s:%s available %p\n",
+             driverName,
+             __func__,
+             available);
+@@ -2531,7 +2531,7 @@
+         if (device != NULL) {
+             PicamHandle discoveredModel;
+             PicamAdvanced_GetCameraModel(device, &discoveredModel);
+-            printf(" discovered %s, current, %s\n", discoveredModel,
++            printf(" discovered %p, current %p\n", discoveredModel,
+                     currentCameraHandle);
+             if (discoveredModel == currentCameraHandle) {
+                 piSetSelectedCamera(pasynUserSelf, selectedCameraIndex);
+@@ -2549,7 +2549,7 @@
+         if (device != NULL) {
+             PicamHandle discoveredModel;
+             PicamAdvanced_GetCameraModel(device, &discoveredModel);
+-            printf(" discovered %s, current, %s", discoveredModel,
++            printf(" discovered %p, current %p\n", discoveredModel,
+                     currentCameraHandle);
+             if (discoveredModel == currentCameraHandle) {
+                 setStringParam(PICAM_CameraInterface, notAvailable);
+@@ -2668,7 +2668,7 @@
+             Picam_GetEnumerationString(PicamEnumeratedType_Parameter, parameter,
+                     &parameterString);
+             asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-                    "%s:%s Parameter %s floating point value Changed to %f.  "
++                    "%s:%s Parameter %s floating point value changed to %f. "
+                             "This change is not handled.\n", driverName,
+                     functionName, parameterString, value);
+             Picam_DestroyString(parameterString);
+@@ -2707,7 +2707,7 @@
+                 &parameterString);
+         asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+                 "%s:%s Setting PICAM parameter %s to driverParameter %d, "
+-                "value %f\n",
++                "value %d\n",
+                 driverName, functionName, parameterString, driverParameter,
+                 value);
+         Picam_DestroyString(parameterString);
+@@ -2807,7 +2807,7 @@
+                 &parameterString);
+         asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+                 "%s:%s Setting PICAM parameter %s to driverParameter %d, "
+-                "value %d long value %d\n",
++                "value %ld long value %ld\n",
+                 driverName, functionName, parameterString, driverParameter,
+                 value, lValue);
+         Picam_DestroyString(parameterString);
+@@ -2816,7 +2816,7 @@
+         Picam_GetEnumerationString(PicamEnumeratedType_Parameter, parameter,
+                 &parameterString);
+         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-        		"%s:%s Parameter %s large integer value Changed %d.\n"
++        		"%s:%s Parameter %s large integer value changed to %ld.\n"
+         		"This change was unhandled\n",
+                 driverName,
+ 				functionName,
+@@ -2845,7 +2845,7 @@
+             functionName);
+     Picam_GetEnumerationString(PicamEnumeratedType_Parameter, parameter,
+             &parameterString);
+-    printf("parameter %s Modulations value Changed to %f", parameterString,
++    printf("parameter %s Modulations value changed to %p", parameterString,
+             value);
+     Picam_DestroyString(parameterString);
+ 
+@@ -2869,7 +2869,7 @@
+             functionName);
+     Picam_GetEnumerationString(PicamEnumeratedType_Parameter, parameter,
+             &parameterString);
+-    printf("parameter %s Pulse value Changed to %f\n", parameterString, value);
++    printf("parameter %s Pulse value changed to %p\n", parameterString, value);
+     Picam_DestroyString(parameterString);
+ 
+     asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Exit\n", driverName,
+@@ -3303,7 +3303,7 @@
+ 				break;
+ 			default: {
+ 				asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-						"%s:%s Unexpected valueType %s", driverName, functionName,
++						"%s:%s Unexpected valueType %d", driverName, functionName,
+ 						valueType);
+ 				return asynError;
+ 			}
+@@ -3892,7 +3892,7 @@
+                     &errorString);
+             asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                     "%s:%s Error With Picam_UnregisterForAcquisitionUpdate "
+-            		"%d: %s\n",
++            		"%p: %s\n",
+                     driverName,
+                     functionName,
+                     currentCameraHandle,
+@@ -4106,6 +4106,7 @@
+  */
+ asynStatus ADPICam::piUnregisterConstraintChangeWatch(
+         PicamHandle cameraHandle) {
++    const char *functionName = "piUnregisterConstraintChangeWatch";
+     int status = asynSuccess;
+     piint parameterCount;
+     const PicamParameter *parameterList;
+@@ -4119,7 +4120,8 @@
+     			error,
+ 				&errorString);
+     	asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-    			"%s:%s ERROR getting list of parameters\n");
++    			"%s:%s ERROR getting list of parameters\n",
++                driverName, functionName);
+     	Picam_DestroyString(errorString);
+     	return asynError;
+     }
+@@ -4137,6 +4139,7 @@
+  * selected camera
+  */
+ asynStatus ADPICam::piUnregisterRelevantWatch(PicamHandle cameraHandle) {
++    const char *functionName = "piUnregisterRelevantWatch";
+     int status = asynSuccess;
+     piint parameterCount;
+     const PicamParameter *parameterList;
+@@ -4151,7 +4154,8 @@
+     			error,
+ 				&errorString);
+     	asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-    			"%s:%s ERROR getting list of parameters\n");
++    			"%s:%s ERROR getting list of parameters\n",
++                driverName, functionName);
+     	Picam_DestroyString(errorString);
+     	return asynError;
+     }
+@@ -4202,7 +4206,8 @@
+     			error,
+ 				&errorString);
+     	asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-    			"%s:%s ERROR getting list of parameters\n");
++    			"%s:%s ERROR getting list of parameters\n",
++                driverName, functionName);
+     	Picam_DestroyString(errorString);
+     	return asynError;
+     }
+@@ -4253,7 +4258,7 @@
+ 				break;
+ 			default: {
+ 				asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-						"%s:%s Unexpected valueType %s", driverName, functionName,
++						"%s:%s Unexpected valueType %d", driverName, functionName,
+ 						valueType);
+ 				return asynError;
+ 			}
+@@ -4504,7 +4509,7 @@
+                             picamParameter,
+                             &paramString);
+                     asynPrint(pasynUser, ASYN_TRACE_ERROR,
+-                            "%s:%s error writing %d to  %s \n"
++                            "%s:%s error writing %f to %s\n"
+                             "Reason %s and not out of range\n",
+                             driverName,
+                             functionName,
+@@ -4579,7 +4584,7 @@
+                         &paramString);
+         		if (value < constraint->minimum){
+     				asynPrint(pasynUser, ASYN_TRACE_ERROR,
+-    						"%s,%s Value %f is out of range %f,%f for "
++    						"%s,%s Value %d is out of range %f,%f for "
+     						"parameter %s\n",
+     						driverName,
+ 							functionName,
+@@ -4591,7 +4596,7 @@
+         		}
+         		else if (value > constraint->maximum){
+     				asynPrint(pasynUser, ASYN_TRACE_ERROR,
+-    						"%s,%s Value %f is out of range %f,%f for "
++    						"%s,%s Value %d is out of range %f,%f for "
+     						"parameter %s\n",
+     						driverName,
+ 							functionName,
+@@ -4658,7 +4663,7 @@
+                         &paramString);
+         		if (value < constraint->minimum){
+     				asynPrint(pasynUser, ASYN_TRACE_ERROR,
+-    						"%s,%s Value %f is out of range %f,%f for "
++    						"%s,%s Value %d is out of range %f,%f for "
+     						"parameter %s\n",
+     						driverName,
+ 							functionName,
+@@ -4670,7 +4675,7 @@
+         		}
+         		else if (value > constraint->maximum){
+     				asynPrint(pasynUser, ASYN_TRACE_ERROR,
+-    						"%s,%s Value %f is out of range %f,%f for "
++    						"%s,%s Value %d is out of range %f,%f for "
+     						"parameter %s\n",
+     						driverName,
+ 							functionName,
+@@ -4704,7 +4709,7 @@
+             Picam_GetEnumerationString(PicamEnumeratedType_Error, error,
+                     &errorString);
+             asynPrint(pasynUser, ASYN_TRACE_ERROR,
+-                    "%s:%s error writing %d to %s\n"
++                    "%s:%s error writing %ld to %s\n"
+                     "Reason %s\n",
+                     driverName,
+                     functionName,
+@@ -4815,7 +4820,7 @@
+     				&paramString);
+         	asynPrint(pasynUser, ASYN_TRACE_ERROR,
+         			"%s:%s ERROR: problem setting Parameter value for"
+-        			" parameter %s trying to set value to %s. %s\n",
++        			" parameter %s trying to set value to %ld, %s\n",
+     				driverName,
+     				__func__,
+     				paramString,
+@@ -4842,6 +4847,8 @@
+                     &paramString);
+             asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                     "%s:%s No collection values available for %s list",
++    				driverName,
++    				__func__,
+                     paramString);
+             Picam_DestroyString(paramString);
+         }
+@@ -4941,7 +4948,7 @@
+                 setIntegerParam(ADNumImagesCounter, imagesCounter);
+                 asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+                         "Acquire, Running %s, errors %d, rate %f, "
+-                		"availableDataCount %d\n",
++                		"availableDataCount %ld\n",
+                         acqStatusRunning ? "True" : "False",
+                         acqStatusErrors,
+                         acqStatusReadoutRate, acqAvailableReadoutCount);
+@@ -5008,7 +5015,7 @@
+ 											+ frameSize);
+ 							timeStampValue = *pTimeStampValue;
+ 							asynPrint(pasynUserSelf, ASYN_TRACE_FLOW,
+-									"%s%s TimeStamp %d  Res %d frame size %d "
++									"%s%s TimeStamp %ld Res %d frame size %d "
+ 									"timestamp %f\n",
+ 									driverName,
+ 									functionName,
+@@ -5056,8 +5063,8 @@
+ 										+ (numTimeStamps * timeStampBitDepth/8));
+ 								asynPrint (pasynUserSelf, ASYN_TRACE_FLOW,
+ 										"%s:%s Frame tracking bit depth %d"
+-										" timeStampBitDepth %d, frameValue %d "
+-										" readout count %d\n",
++										" timeStampBitDepth %d, frameValue %ld "
++										" readout count %ld\n",
+ 										driverName,
+ 										functionName,
+ 										frameTrackingBitDepth,
+@@ -5098,7 +5105,7 @@
+                         acqStatusErrors,
+ 						&errorMaskString);
+                 asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-                        "Acquire1, Running %s, errors %d, rate %f, array "
++                        "Acquire1, Running %s, errors %s, rate %f, array "
+                         "counter %d\n",
+                         acqStatusRunning ? "True":"false",
+                                 errorMaskString,
+@@ -5113,7 +5120,7 @@
+         Picam_GetEnumerationString(PicamEnumeratedType_AcquisitionErrorsMask,
+                 acqStatusErrors, &errorMaskString);
+         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-                "Acquire2, Running %s, errors %d, rate %f\n",
++                "Acquire2, Running %s, errors %s, rate %f\n",
+                 acqStatusRunning ? "True":"false",
+                         errorMaskString,
+                         acqStatusReadoutRate);

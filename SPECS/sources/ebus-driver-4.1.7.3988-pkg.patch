@@ -1,0 +1,53 @@
+diff -Nur install_image/eBUS_SDK.conf install_image/eBUS_SDK.conf
+--- install_image/eBUS_SDK.conf	1970-01-01 08:00:00.000000000 +0800
++++ install_image/eBUS_SDK.conf	2024-07-10 16:03:39.238982284 +0800
+@@ -0,0 +1,1 @@
++/opt/pleora/ebus_sdk/x86_64/lib/genicam/bin/Linux64_x64
++/opt/pleora/ebus_sdk/x86_64/lib/genicam/bin/Linux64_x64/GenApi/Generic
+diff -Nur install_image/ebus-module-load install_image/ebus-module-load
+--- install_image/ebus-module-load	1970-01-01 08:00:00.000000000 +0800
++++ install_image/ebus-module-load	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,6 @@
++#!/bin/sh -e
++
++insmod /var/ebus/module/ebUniversalProForEthernet-"$(arch).ko.$(uname -r)"
++major="$(awk '$2 == "ebUniversalProForEthernet" {print $1}' /proc/devices)"
++mknod -m 0770 /dev/ebUniversalProForEthernet c "$major" 0
++chgrp video /dev/ebUniversalProForEthernet
++#sysctl -w net.core.rmem_max=10485760 net.core.wmem_max=10485760
++
+diff -Nur install_image/ebus-module-make install_image/ebus-module-make
+--- install_image/ebus-module-make	1970-01-01 08:00:00.000000000 +0800
++++ install_image/ebus-module-make	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,9 @@
++#!/bin/sh -e
++
++kver="$(uname -r)"
++mod=ebUniversalProForEthernet-"$(arch)".ko
++rm -f /var/ebus/module/"$mod".*
++make -C /usr/src/kernels/"$kver" M=/var/ebus/module "$@"
++[ -f /var/ebus/module/"$mod" ] || exit 0
++ln -s "$mod" /var/ebus/module/"$mod.$(uname -r)"
++
+diff -Nur install_image/pleora/module/ebUniversalProForEthernet/Makefile install_image/pleora/module/ebUniversalProForEthernet/Makefile
+--- install_image/pleora/module/ebUniversalProForEthernet/Makefile	2022-02-02 03:41:05.000000000 +0800
++++ install_image/pleora/module/ebUniversalProForEthernet/Makefile	2023-08-23 01:46:20.929587103 +0800
+@@ -1,7 +1,3 @@
+-
+-PWD = `pwd`
+-KERNEL_FOLDER := /lib/modules/$(shell uname -r)/build
+-
+ EXTRA_CFLAGS += -D_UNIX_ -D_PT_KERNEL_ -I$(src)
+ 
+ obj-m += ebUniversalProForEthernet-x86_64.o
+@@ -24,10 +20,3 @@
+ 	OS_KMLWorkQueue.o			\
+     libebTransportLayer-x86_64.a
+ 
+-all:
+-	@make -C $(KERNEL_FOLDER) M=$(PWD) modules
+-
+-clean:
+-	@rm -rf *.o .??* ebUniversalProForEthernet-x86_64.mod.c Module.markers Module.symvers modules.order
+-
+-

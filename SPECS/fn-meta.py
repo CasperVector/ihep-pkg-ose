@@ -11,6 +11,10 @@ def license(arg):
 		arg = "EPICS Open License"
 	return "License: %s\n" % arg
 
+def codeberg(proj):
+	return "URL: https://codeberg.org/%s/%%{repo}\n" % proj + \
+		"Source0: %%{codeberg_archive %s %%{repo} %%{commit}}\n" % proj
+
 def github(proj):
 	return "URL: https://github.com/%s/%%{repo}\n" % proj + \
 		"Source0: %%{github_archive %s %%{repo} %%{commit}}\n" % proj

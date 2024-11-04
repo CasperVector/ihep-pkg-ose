@@ -1,0 +1,153 @@
+diff -ur ADPcoWin-R6-0/iocs/pcowinIOC/pcowinApp/src/Makefile ADPcoWin-R6-0/iocs/pcowinIOC/pcowinApp/src/Makefile
+--- ADPcoWin-R6-0/iocs/pcowinIOC/pcowinApp/src/Makefile	2021-07-27 04:55:54.000000000 +0800
++++ ADPcoWin-R6-0/iocs/pcowinIOC/pcowinApp/src/Makefile	2024-07-28 00:56:29.399050589 +0800
+@@ -6,7 +6,7 @@
+ PROD_NAME = pcowinApp
+ 
+ # Only build for Windows
+-PROD_IOC_WIN32 += $(PROD_NAME)
++PROD_IOC += $(PROD_NAME)
+ 
+ # <name>.dbd will be created from <name>Include.dbd
+ DBD += $(PROD_NAME).dbd
+@@ -20,18 +20,24 @@
+ $(PROD_NAME)_SRCS += $(PROD_NAME)_registerRecordDeviceDriver.cpp $(PROD_NAME)Main.cpp
+ 
+ # Add locally compiled object code
+-$(PROD_NAME)_LIBS += pcowin PCO_CDlg Pco_conv SC2_Cam SC2_DLG
++$(PROD_NAME)_LIBS += pcowin
++$(PROD_NAME)_SYS_LIBS_WIN32 += PCO_CDlg Pco_conv SC2_Cam SC2_DLG
++$(PROD_NAME)_SYS_LIBS_Linux += pco_sc2cam
+ 
+ # Other library dependencies
+ $(PROD_NAME)_LIBS += ADBase
+ $(PROD_NAME)_LIBS += busy
+ 
+ # System libraries
++ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
++ifneq (mingw, $(findstring mingw, $(T_A)))
+ $(PROD_NAME)_SYS_LIBS += nafxcw
++endif
+ $(PROD_NAME)_SYS_LIBS += Comctl32
+ $(PROD_NAME)_SYS_LIBS += Winspool
+ $(PROD_NAME)_SYS_LIBS += Comdlg32
+ $(PROD_NAME)_SYS_LIBS += windowscodecs
++endif
+ 
+ # Include pco .dll files
+ BIN_INSTALLS_WIN32 += $(wildcard $(ADPCOWIN)/bin/$(EPICS_HOST_ARCH)/*.dll)
+diff -ur ADPcoWin-R6-0/Makefile ADPcoWin-R6-0/Makefile
+--- ADPcoWin-R6-0/Makefile	2021-07-27 04:55:54.000000000 +0800
++++ ADPcoWin-R6-0/Makefile	2024-07-28 00:56:29.403050652 +0800
+@@ -10,7 +10,7 @@
+ endif
+ 
+ define DIR_template
+- $(1)_DEPEND_DIRS = configure
++ $(1)_DEPEND_DIRS += configure
+ endef
+ $(foreach dir, $(filter-out configure,$(DIRS)),$(eval $(call DIR_template,$(dir))))
+ 
+diff -ur ADPcoWin-R6-0/pcowinApp/src/Makefile ADPcoWin-R6-0/pcowinApp/src/Makefile
+--- ADPcoWin-R6-0/pcowinApp/src/Makefile	2021-07-27 04:55:54.000000000 +0800
++++ ADPcoWin-R6-0/pcowinApp/src/Makefile	2024-07-28 00:56:29.403050652 +0800
+@@ -2,7 +2,7 @@
+ 
+ include $(TOP)/configure/CONFIG
+ 
+-LIBRARY_IOC_WIN32 += pcowin
++LIBRARY_IOC += pcowin
+ 
+ # xxxRecord.h will be created from xxxRecord.dbd
+ #DBDINC += xxx.h
+@@ -27,7 +27,7 @@
+ pcowin_SRCS += SocketProtocol.cpp
+ pcowin_SRCS += PerformanceMonitor.cpp
+ pcowin_SRCS += PcoException.cpp
+-pcowin_SRCS_WIN32 += PcoApi.cpp
++pcowin_SRCS += PcoApi.cpp
+ pcowin_SRCS += SimulationApi.cpp
+ pcowin_SRCS += TakeLock.cpp
+ pcowin_SRCS += FreeLock.cpp
+@@ -47,17 +47,17 @@
+   LIB_INSTALLS += $(wildcard ../lib64/*.lib)
+   BIN_INSTALLS += $(wildcard ../dll64/*.dll)
+   USR_CFLAGS += /wd4290
+-  USR_CPPFLAGS += /wd4290
++  USR_CXXFLAGS += /wd4290
+   #USR_LDFLAGS += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
+ else ifeq (windows-x64, $(findstring windows-x64, $(T_A)))
+   LIB_INSTALLS += $(wildcard ../lib64/*.lib)
+   BIN_INSTALLS += $(wildcard ../dll64/*.dll)
+-  USR_CFLAGS += /O2 /wd4290
+-  USR_CPPFLAGS += /O2 /wd4290
+-  USR_LDFLAGS += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
+-else
+-  USR_CPPFLAGS += -DDEBUG -O0
+-  USR_CFLAGS += -DDEBUG  -O0
++  USR_CFLAGS += -DDEBUG -O0
++  USR_CXXFLAGS += -DDEBUG -O0 --std=c++11
++else ifeq (linux-x86, $(findstring linux-x86, $(T_A)))
++  pcowin_SRCS += pevents.cpp
++  USR_CFLAGS += -DDEBUG -O0
++  USR_CXXFLAGS += -DDEBUG -O0 --std=c++11
+ endif
+ 
+ ifeq ($(SHARED_LIBRARIES), YES)
+@@ -68,7 +68,8 @@
+ #HOST_OPT=NO
+ 
+ include $(ADCORE)/ADApp/commonLibraryMakefile
+-LIB_LIBS += PCO_CDlg Pco_conv SC2_Cam SC2_DLG
++LIB_SYS_LIBS_WIN32 += PCO_CDlg Pco_conv SC2_Cam SC2_DLG
++LIB_SYS_LIBS_Linux += pco_sc2cam
+ 
+ include $(TOP)/configure/RULES
+ 
+diff -ur ADPcoWin-R6-0/pcowinApp/src/PcoApi.cpp ADPcoWin-R6-0/pcowinApp/src/PcoApi.cpp
+--- ADPcoWin-R6-0/pcowinApp/src/PcoApi.cpp	2021-07-27 04:55:54.000000000 +0800
++++ ADPcoWin-R6-0/pcowinApp/src/PcoApi.cpp	2024-07-28 00:56:29.403050652 +0800
+@@ -16,14 +16,13 @@
+ #include "TakeLock.h"
+ #include "epicsExport.h"
+ #include "iocsh.h"
+-#include "sc2_SDKStructures.h"
+-#include "SC2_SDKAddendum.h"
++#include "sc2_sdkstructures.h"
++#include "sc2_sdkaddendum.h"
+ #include "sc2_defs.h"
+-#include "PCO_err.h"
++#include "pco_err.h"
+ #define PCO_ERRT_H_CREATE_OBJECT
+-#include "PCO_errt.h"
+-#include "load.h"
+-#include "SC2_CamExport.h"
++#include "pco_errt.h"
++#include "sc2_camexport.h"
+ 
+ /**
+  * Constructor
+diff -ur ADPcoWin-R6-0/pcowinApp/src/PcoApi.h ADPcoWin-R6-0/pcowinApp/src/PcoApi.h
+--- ADPcoWin-R6-0/pcowinApp/src/PcoApi.h	2021-07-27 04:55:54.000000000 +0800
++++ ADPcoWin-R6-0/pcowinApp/src/PcoApi.h	2024-07-28 00:56:29.403050652 +0800
+@@ -16,7 +16,9 @@
+ #include <string>
+ #include "epicsMessageQueue.h"
+ #include "DllApi.h"
++#ifndef __GNUC__
+ #include "afxwin.h"
++#endif
+ #include "windows.h"
+ #include <stdio.h>
+ #include "winsock2.h"
+diff -ur ADPcoWin-R6-0/pcowinApp/src/SocketProtocol.cpp ADPcoWin-R6-0/pcowinApp/src/SocketProtocol.cpp
+--- ADPcoWin-R6-0/pcowinApp/src/SocketProtocol.cpp	2021-07-27 04:55:54.000000000 +0800
++++ ADPcoWin-R6-0/pcowinApp/src/SocketProtocol.cpp	2024-07-28 00:56:29.403050652 +0800
+@@ -15,6 +15,7 @@
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+ #include <netdb.h>
++#include <unistd.h>
+ #define closesocket close
+ #define RECVSIZE size_t
+ #endif

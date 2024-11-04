@@ -1,0 +1,33 @@
+diff -Nur firebird-driver/aslphxapi.conf firebird-driver/aslphxapi.conf
+--- firebird-driver/aslphxapi.conf	1970-01-01 08:00:00.000000000 +0800
++++ firebird-driver/aslphxapi.conf	2022-12-27 20:38:43.056175200 +0800
+@@ -0,0 +1,1 @@
++/usr/local/activesilicon/lib64
+diff -Nur firebird-driver/firebird-module-load firebird-driver/firebird-module-load
+--- firebird-driver/firebird-module-load	1970-01-01 08:00:00.000000000 +0800
++++ firebird-driver/firebird-module-load	2022-12-27 20:38:43.056175200 +0800
+@@ -0,0 +1,5 @@
++#!/bin/sh -e
++if dmesg | grep IOMMU | grep -qv IOMMUv2; then
++	echo 'In case of capture failure, try disabling IOMMU in BIOS'; fi
++modprobe -a aslenum asldma aslcxp aslser
++
+diff -Nur firebird-driver/firebird-module-make firebird-driver/firebird-module-make
+--- firebird-driver/firebird-module-make	1970-01-01 08:00:00.000000000 +0800
++++ firebird-driver/firebird-module-make	2022-12-27 20:37:52.671557968 +0800
+@@ -0,0 +1,15 @@
++#!/bin/sh -e
++
++kver="$(uname -r)"
++drvd=/var/firebird/module/mdadrv/linux
++
++make -C /usr/src/kernels/"$kver" M="$drvd"/aslenum "$@"
++for mod in asldma aslcxp aslser; do
++	make -C /usr/src/kernels/"$kver" M="$drvd"/"$mod" \
++		KBUILD_EXTRA_SYMBOLS="$drvd"/aslenum/Module.symvers "$@"
++done
++if [ "$*" != clean ]; then
++	cp "$drvd"/*/*.ko /lib/modules/"$kver"/kernel/drivers/misc
++	depmod -a
++fi
++

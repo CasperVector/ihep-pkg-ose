@@ -1,0 +1,39 @@
+diff -Nur dma_ip_drivers/xdma-module-compat dma_ip_drivers/xdma-module-compat
+--- dma_ip_drivers/xdma-module-compat	1970-01-01 08:00:00.000000000 +0800
++++ dma_ip_drivers/xdma-module-compat	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,8 @@
++#!/bin/sh -e
++
++dname="${1%%_*}"
++fname="${1#*_}"
++[ -n "$dname" -a -n "$fname" ]
++mkdir -p /dev/"$dname"
++ln -s /dev/"$1" /dev/"$dname"/"$fname"
++
+diff -Nur dma_ip_drivers/xdma-module-load dma_ip_drivers/xdma-module-load
+--- dma_ip_drivers/xdma-module-load	1970-01-01 08:00:00.000000000 +0800
++++ dma_ip_drivers/xdma-module-load	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,3 @@
++#!/bin/sh -e
++modprobe xdma
++
+diff -Nur dma_ip_drivers/xdma-module-make dma_ip_drivers/xdma-module-make
+--- dma_ip_drivers/xdma-module-make	1970-01-01 08:00:00.000000000 +0800
++++ dma_ip_drivers/xdma-module-make	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,10 @@
++#!/bin/sh -e
++
++kver="$(uname -r)"
++drvd=/var/xdma/module/xdma
++make -C /usr/src/kernels/"$kver" M="$drvd" "$@"
++if [ "$*" != clean ]; then
++	cp "$drvd"/*.ko /lib/modules/"$kver"/kernel/drivers/misc
++	depmod -a
++fi
++
+diff -Nur dma_ip_drivers/xdma.rules dma_ip_drivers/xdma.rules
+--- dma_ip_drivers/99-xdma.rules	1970-01-01 08:00:00.000000000 +0800
++++ dma_ip_drivers/99-xdma.rules	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,2 @@
++KERNEL=="xdma?*", GROUP="video", MODE="0660"
++KERNEL=="xdma?*", ACTION=="add", RUN+="/usr/bin/xdma-module-compat %k"

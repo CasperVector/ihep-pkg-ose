@@ -44,6 +44,7 @@ add_patch iocStats mingw
 add_patch asyn files
 add_patch busy config
 add_patch motor bugs
+add_patch motor asyneres
 
 rmdir motor/modules/motor*/ areaDetector/*/ || true; cd areaDetector
 for name in $ads; do expand_rename "$name"; done

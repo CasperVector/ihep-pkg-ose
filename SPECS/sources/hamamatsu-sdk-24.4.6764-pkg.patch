@@ -1,0 +1,8 @@
+diff -Nur DCAM-API_for_Linux_v24.4.6764/api/runtime/etc/ld.so.conf.d/hamamatsu_dcam.conf DCAM-API_for_Linux_v24.4.6764/api/runtime/etc/ld.so.conf.d/hamamatsu_dcam.conf
+--- DCAM-API_for_Linux_v24.4.6764/api/runtime/etc/ld.so.conf.d/hamamatsu_dcam.conf	2022-12-27 12:28:43.000000000 +0800
++++ DCAM-API_for_Linux_v24.4.6764/api/runtime/etc/ld.so.conf.d/hamamatsu_dcam.conf	2024-07-10 16:03:39.238982284 +0800
+@@ -1,4 +1,2 @@
+ # Hamamatsu DCAM default configuration
+ /usr/local/hamamatsu_dcam/api/modules
+-/usr/local/hamamatsu_dcam/api
+-/usr/local/lib

@@ -1,0 +1,6 @@
+diff -Nur andor/script/andor.rules andor/script/andor.rules
+--- andor/script/andor.rules	2012-02-03 06:46:28.000000000 +0800
++++ andor/script/andor.rules	2022-09-13 00:39:41.737426787 +0800
+@@ -1 +1 @@
+-ATTR{idVendor}=="136e", MODE="0666"
++SUBSYSTEM=="usb", ATTR{idVendor}=="136e", GROUP="video", MODE="0660"

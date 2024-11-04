@@ -1,6 +1,6 @@
 %define repo motorScriptMotor
 %define commit R1-1
-%{meta name license=EPICS github=epics-motor version=commit,3}
+%{meta name license=EPICS github=epics-motor version=commit,4}
 
 Summary:        EPICS - Module for a Lua-scripted motor
 BuildRequires:  epics-lua

@@ -1,7 +1,7 @@
 %define repo Galil
 %define repotail 3-0
 %define commit 3-6
-%{meta name license=EPICS version=commit,4}
+%{meta name license=EPICS version=commit,5}
 
 Summary:        EPICS - Driver for Galil products based on asyn
 URL:            https://github.com/motorapp/%{repo}-%{repotail}

@@ -1,0 +1,28 @@
+diff --git a/configure/RELEASE b/configure/RELEASE
+index 814e0b7..78e1b40 100644
+--- a/configure/RELEASE
++++ b/configure/RELEASE
+@@ -11,6 +11,8 @@
+ 
+ SUPPORT=/opt/epics
+ ASYN=$(SUPPORT)/asyn
++AUTOSAVE=$(SUPPORT)/autosave
++DEVIOCSTATS=$(SUPPORT)/iocStats
+ EPICS_BASE=/opt/epics/base
+ 
+ # These lines allow developers to override these RELEASE settings
+diff --git a/usb220App/src/Makefile b/usb220App/src/Makefile
+index 9c3bf4e..963fd98 100644
+--- a/usb220App/src/Makefile
++++ b/usb220App/src/Makefile
+@@ -31,6 +31,10 @@ usb220App_DBD += asyn.dbd
+ usb220App_SRCS += usb220App_registerRecordDeviceDriver.cpp
+ usb220App_SRCS_DEFAULT += usb220AppMain.cpp
+ 
++usb220App_DBD += asSupport.dbd
++usb220App_DBD += devIocStats.dbd
++PROD_LIBS += autosave
++PROD_LIBS += devIocStats
+ PROD_LIBS += usb220Support
+ PROD_LIBS += asyn
+ PROD_LIBS += $(EPICS_BASE_IOC_LIBS)

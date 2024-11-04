@@ -9,16 +9,23 @@ dac128V ip330 ipUnidig love softGlue vac std
 modbus StreamDevice vme softGlueZynq camac ip
 
 delaygen optics mca Galil measComp quadEM dxpSITORO dxp
-Keithley648x netDev s7nodave
+procServControl Keithley648x netDev s7nodave
 
-motorMotorSim motorAMCI motorAcs motorAcsTech80 motorAerotech
-motorAttocube motorDeltaTau motorFaulhaber motorHytec motorIms
-motorKohzu motorMclennan motorMicos motorMicroMo motorMicronix
+motorMotorSim motorAMCI motorAcs motorAcsMotion motorAcsTech80
+motorAerotech motorAttocube motorDeltaTau motorFaulhaber motorHytec
+motorIms motorKohzu motorMclennan motorMicos motorMicroMo motorMicronix
 motorNPoint motorNewFocus motorNewport motorOms motorOmsAsyn
 motorOriel motorPI motorPIGCS2 motorParker motorPhytron motorPiJena
 motorScriptMotor motorSmarAct motorSmartMotor motorThorLabs
+motorBoci motorElmo motorHuber motorKohzuAsyn
+motorOptoSigma motorPm16c motorZolix
 
-ADSimDetector ADEiger ADmarCCD ADMerlin
-ADPandABlocks ADPilatus ADURL ADUVC ADXspress3
-ADAndor ADAndor3
+ADSimDetector ADGenICam ADAravis ADEiger ADmarCCD ADMerlin
+ADMythen ADPandABlocks ADPilatus ADURL ADUVC ADXspress3
+#ADAndor ADAndor3 ADHamamatsu ADPICam ADXimea  # need dist_srv
+ADIRay ADMinipix ADTucsen
+
+# Needs pco-sdk; plus PCO_AllocateBuffer() only supports `hEvent'
+# on Windows, due to a lack of CreateEvent() etc on Linux.
+#ADPcoWin
 

@@ -1,0 +1,151 @@
+From 42db0bd0417721a026313fc151f36a8ef0bff4e4 Mon Sep 17 00:00:00 2001
+From: Michael Brown <mcb30@ipxe.org>
+Date: Tue, 26 Jan 2021 15:44:59 +0000
+Subject: [PATCH] [cmdline] Expose "iflinkwait" as a command
+
+Signed-off-by: Michael Brown <mcb30@ipxe.org>
+---
+ src/hci/commands/ifmgmt_cmd.c | 56 +++++++++++++++++++++++++++++++++++
+ src/include/usr/ifmgmt.h      |  3 +-
+ src/usr/ifmgmt.c              | 11 ++++---
+ src/usr/lotest.c              |  4 +--
+ 4 files changed, 67 insertions(+), 7 deletions(-)
+
+diff --git a/src/hci/commands/ifmgmt_cmd.c b/src/hci/commands/ifmgmt_cmd.c
+index 2e976d3fbb..591cb3da87 100644
+--- a/src/hci/commands/ifmgmt_cmd.c
++++ b/src/hci/commands/ifmgmt_cmd.c
+@@ -250,6 +250,58 @@ int ifconf_exec ( int argc, char **argv ) {
+ 	return ifcommon_exec ( argc, argv, &ifconf_cmd );
+ }
+ 
++/** "iflinkwait" option list */
++struct iflinkwait_options {
++	/** Link timeout */
++	unsigned long timeout;
++};
++
++/** "iflinkwait" option list */
++static struct option_descriptor iflinkwait_opts[] = {
++	OPTION_DESC ( "timeout", 't', required_argument,
++		      struct iflinkwait_options, timeout, parse_timeout ),
++};
++
++/**
++ * "iflinkwait" payload
++ *
++ * @v netdev		Network device
++ * @v opts		Command options
++ * @ret rc		Return status code
++ */
++static int iflinkwait_payload ( struct net_device *netdev,
++				struct iflinkwait_options *opts ) {
++	int rc;
++
++	/* Wait for link-up */
++	if ( ( rc = iflinkwait ( netdev, opts->timeout, 1 ) ) != 0 ) {
++
++		/* Close device on failure, to avoid memory exhaustion */
++		netdev_close ( netdev );
++
++		return rc;
++	}
++
++	return 0;
++}
++
++/** "iflinkwait" command descriptor */
++static struct ifcommon_command_descriptor iflinkwait_cmd =
++	IFCOMMON_COMMAND_DESC ( struct iflinkwait_options, iflinkwait_opts,
++				0, MAX_ARGUMENTS, "[<interface>...]",
++				iflinkwait_payload, 1 );
++
++/**
++ * The "iflinkwait" command
++ *
++ * @v argc		Argument count
++ * @v argv		Argument list
++ * @ret rc		Return status code
++ */
++static int iflinkwait_exec ( int argc, char **argv ) {
++	return ifcommon_exec ( argc, argv, &iflinkwait_cmd );
++}
++
+ /** Interface management commands */
+ struct command ifmgmt_commands[] __command = {
+ 	{
+@@ -268,4 +320,8 @@ struct command ifmgmt_commands[] __command = {
+ 		.name = "ifconf",
+ 		.exec = ifconf_exec,
+ 	},
++	{
++		.name = "iflinkwait",
++		.exec = iflinkwait_exec,
++	},
+ };
+diff --git a/src/include/usr/ifmgmt.h b/src/include/usr/ifmgmt.h
+index 52f88f9577..8d8a6bb56a 100644
+--- a/src/include/usr/ifmgmt.h
++++ b/src/include/usr/ifmgmt.h
+@@ -18,6 +18,7 @@ extern int ifconf ( struct net_device *netdev,
+ 		    unsigned long timeout );
+ extern void ifclose ( struct net_device *netdev );
+ extern void ifstat ( struct net_device *netdev );
+-extern int iflinkwait ( struct net_device *netdev, unsigned long timeout );
++extern int iflinkwait ( struct net_device *netdev, unsigned long timeout,
++			int verbose );
+ 
+ #endif /* _USR_IFMGMT_H */
+diff --git a/src/usr/ifmgmt.c b/src/usr/ifmgmt.c
+index f1172bafb3..2150bfff7c 100644
+--- a/src/usr/ifmgmt.c
++++ b/src/usr/ifmgmt.c
+@@ -212,17 +212,20 @@ static int iflinkwait_progress ( struct ifpoller *ifpoller ) {
+  *
+  * @v netdev		Network device
+  * @v timeout		Timeout period, in ticks
++ * @v verbose		Always display progress message
++ * @ret rc		Return status code
+  */
+-int iflinkwait ( struct net_device *netdev, unsigned long timeout ) {
++int iflinkwait ( struct net_device *netdev, unsigned long timeout,
++		 int verbose ) {
+ 	int rc;
+ 
+ 	/* Ensure device is open */
+ 	if ( ( rc = ifopen ( netdev ) ) != 0 )
+ 		return rc;
+ 
+-	/* Return immediately if link is already up */
++	/* Return immediately if link is already up, unless being verbose */
+ 	netdev_poll ( netdev );
+-	if ( netdev_link_ok ( netdev ) )
++	if ( netdev_link_ok ( netdev ) && ( ! verbose ) )
+ 		return 0;
+ 
+ 	/* Wait for link-up */
+@@ -273,7 +276,7 @@ int ifconf ( struct net_device *netdev,
+ 	int rc;
+ 
+ 	/* Ensure device is open and link is up */
+-	if ( ( rc = iflinkwait ( netdev, LINK_WAIT_TIMEOUT ) ) != 0 )
++	if ( ( rc = iflinkwait ( netdev, LINK_WAIT_TIMEOUT, 0 ) ) != 0 )
+ 		return rc;
+ 
+ 	/* Start configuration */
+diff --git a/src/usr/lotest.c b/src/usr/lotest.c
+index 6b75b5048a..5b88ef27e0 100644
+--- a/src/usr/lotest.c
++++ b/src/usr/lotest.c
+@@ -208,9 +208,9 @@ int loopback_test ( struct net_device *sender, struct net_device *receiver,
+ 		return rc;
+ 
+ 	/* Wait for link-up */
+-	if ( ( rc = iflinkwait ( sender, 0 ) ) != 0 )
++	if ( ( rc = iflinkwait ( sender, 0, 0 ) ) != 0 )
+ 		return rc;
+-	if ( ( rc = iflinkwait ( receiver, 0 ) ) != 0 )
++	if ( ( rc = iflinkwait ( receiver, 0, 0 ) ) != 0 )
+ 		return rc;
+ 
+ 	/* Allocate data buffer */

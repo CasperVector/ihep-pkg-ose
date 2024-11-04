@@ -1,0 +1,36 @@
+diff -Nur phoebus/phoebus.desktop phoebus/phoebus.desktop
+--- phoebus/phoebus.desktop	1970-01-01 08:00:00.000000000 +0800
++++ phoebus/phoebus.desktop	2022-11-06 21:37:34.200555809 +0800
+@@ -0,0 +1,8 @@
++[Desktop Entry]
++Name=Phoebus
++Exec=phoebus
++Icon=phoebus
++Terminal=false
++Categories=Development;
++Type=Application
++
+diff -Nur phoebus/phoebus/settings_template.ini phoebus/phoebus/settings_template.ini
+--- phoebus/phoebus/settings_template.ini	2022-11-04 16:07:36.000000000 +0800
++++ phoebus/phoebus/settings_template.ini	2022-11-07 11:30:05.363029891 +0800
+@@ -1067,9 +1067,9 @@
+ ###########################
+ 
+ # Channel Access address list
+-# org.phoebus.pv.ca/addr_list=
++org.phoebus.pv.ca/addr_list=127.255.255.255
+ 
+-# org.phoebus.pv.ca/auto_addr_list=true
++org.phoebus.pv.ca/auto_addr_list=false
+ 
+ # org.phoebus.pv.ca/max_array_bytes=100000000
+ 
+diff -Nur phoebus/phoebus.sh phoebus/phoebus.sh
+--- phoebus/phoebus.sh	1970-01-01 08:00:00.000000000 +0800
++++ phoebus/phoebus.sh	2022-11-06 21:34:58.166443183 +0800
+@@ -0,0 +1,5 @@
++#!/bin/sh -e
++
++cd /opt/phoebus
++exec /usr/lib/jvm/jre-11-openjdk/bin/java $PHOEBUS_OPTS -jar product-*.jar "$@"
++

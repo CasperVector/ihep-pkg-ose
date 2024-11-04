@@ -5,8 +5,8 @@
 %{meta name license=LGPLv3+ version=2_6,5.commit}
 
 Summary:        EPICS - Xspress3 readout devices from Quantum Detectors
-URL:            https://github.com/CasperVector/%{repo}
-Source0:        %{github_archive_ver CasperVector %{repo} %{commit} v}
+URL:            https://codeberg.org/CasperVector/%{repo}
+Source0:        %{codeberg_archive CasperVector %{repo} v%{commit}}
 
 %{inherit ad + global deps}
 %description

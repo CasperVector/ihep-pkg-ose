@@ -1,0 +1,53 @@
+diff -Nur andor/bitflow-module-load andor/bitflow-module-load
+--- andor/bitflow-module-load	1970-01-01 08:00:00.000000000 +0800
++++ andor/bitflow-module-load	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,5 @@
++#!/bin/sh -e
++
++modprobe -a v4l2_common videodev
++insmod /var/bitflow/module/bitflow.ko."$(uname -r)" fwDelay1=200 customFlags=1
++
+diff -Nur andor/bitflow-module-make andor/bitflow-module-make
+--- andor/bitflow-module-make	1970-01-01 08:00:00.000000000 +0800
++++ andor/bitflow-module-make	2022-09-13 22:53:03.366576000 +0800
+@@ -0,0 +1,8 @@
++#!/bin/sh -e
++
++kver="$(uname -r)"
++rm -f /var/bitflow/module/bitflow.ko.*
++make -C /usr/src/kernels/"$kver" M=/var/bitflow/module "$@"
++[ -f /var/bitflow/module/bitflow.ko ] || exit 0
++ln -s bitflow.ko /var/bitflow/module/bitflow.ko."$(uname -r)"
++
+diff -Nur andor/bitflow/drv/Makefile_32b andor/bitflow/drv/Makefile_32b
+--- andor/bitflow/drv/Makefile_32b	2019-07-26 19:00:19.000000000 +0800
++++ andor/bitflow/drv/Makefile_32b	2020-09-27 15:50:04.254702588 +0800
+@@ -15,11 +15,7 @@
+ #
+ ###
+ #
+-BF_LIB = ../32b/lib
+-#
+-###
+-#
+-bitflow-objs := bflki.o $(BF_LIB)/libBFmodule.o
++bitflow-objs := bflki.o libBFmodule.o
+ 
+ obj-m := bitflow.o
+ #
+diff -Nur andor/bitflow/drv/Makefile_64b andor/bitflow/drv/Makefile_64b
+--- andor/bitflow/drv/Makefile_64b	2019-07-26 19:00:19.000000000 +0800
++++ andor/bitflow/drv/Makefile_64b	2020-09-27 15:50:16.594789126 +0800
+@@ -15,11 +15,7 @@
+ #
+ ###
+ #
+-BF_LIB = ../64b/lib
+-#
+-###
+-#
+-bitflow-objs := bflki.o $(BF_LIB)/libBFmodule.o
++bitflow-objs := bflki.o libBFmodule.o
+ 
+ obj-m := bitflow.o
+ #

@@ -1,2 +1,3 @@
-npreal2
+s6 s6-epics npreal2 busybox ipxe
+#ImageJ phoebus  # need dist_srv
 
