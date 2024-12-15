@@ -1,4 +1,4 @@
 kernel-rt kernel-rt-devel docker-ce
-re2c hidapi-devel libicns-utils meson zeromq-devel
+re2c libicns-utils meson zeromq-devel
 procServ
 

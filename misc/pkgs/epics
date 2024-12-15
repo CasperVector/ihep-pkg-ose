@@ -18,7 +18,7 @@ motorNPoint motorNewFocus motorNewport motorOms motorOmsAsyn
 motorOriel motorPI motorPIGCS2 motorParker motorPhytron motorPiJena
 motorScriptMotor motorSmarAct motorSmartMotor motorThorLabs
 motorBoci motorElmo motorHuber motorKohzuAsyn
-motorOptoSigma motorPm16c motorZolix
+motorOptem motorOptoSigma motorPm16c motorZolix
 
 ADSimDetector ADGenICam ADAravis ADEiger ADmarCCD ADMerlin
 ADMythen ADPandABlocks ADPilatus ADURL ADUVC ADXspress3

@@ -1,0 +1,34 @@
+diff -ur libuldaq-1.2.1/Makefile.in libuldaq-1.2.1/Makefile.in
+--- libuldaq-1.2.1/Makefile.in	2022-03-22 09:48:08.000000000 +0800
++++ libuldaq-1.2.1/Makefile.in	2025-01-17 22:58:33.350264824 +0800
+@@ -357,7 +357,7 @@
+ DISTCLEANFILES = libuldaq.pc
+ SUBDIRS = src $(am__append_1)
+ EXTRA_DIST = doc/Doxyfile doc/DoxygenLayout.xml doc/pagesref.css doc/pagesref.txt
+-dist_doc_DATA = README.md
++dist_doc_DATA =
+ pkgconfigdir = $(libdir)/pkgconfig
+ dist_pkgconfig_DATA = libuldaq.pc
+ 
+@@ -370,7 +370,7 @@
+ # fpga/USB_26xx.rbf\
+ # fpga/USB_CTR.bin\
+ # fpga/USB_DIO32HS.bin
+-@OS_LINUX_TRUE@rulesdatadir = /lib/udev/rules.d/
++@OS_LINUX_TRUE@rulesdatadir = /etc/udev/rules.d/
+ @OS_LINUX_TRUE@dist_rulesdata_DATA = rules/50-uldaq.rules
+ reldir = .release/$(distdir)
+ all: config.h
+@@ -947,12 +947,6 @@
+ 	mkdir -p $(reldir)
+ 	cp $(distdir).tar.bz2 $(reldir)
+ 
+-@OS_LINUX_TRUE@install-data-hook:
+-@OS_LINUX_TRUE@	udevadm control --reload-rules && \
+-@OS_LINUX_TRUE@	test -f "/etc/redhat-release" && echo "/usr/local/lib" > /etc/ld.so.conf.d/uldaq.conf || echo "" && \
+-@OS_LINUX_TRUE@	test -f "/etc/arch-release" && echo "/usr/local/lib" > /etc/ld.so.conf.d/uldaq.conf || echo "" && \
+-@OS_LINUX_TRUE@	ldconfig
+-
+ @OS_LINUX_TRUE@uninstall-hook:
+ @OS_LINUX_TRUE@	test -f "/etc/ld.so.conf.d/uldaq.conf" &&  rm "/etc/ld.so.conf.d/uldaq.conf" || echo ""
+ 

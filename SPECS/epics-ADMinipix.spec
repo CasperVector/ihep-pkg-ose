@@ -1,6 +1,6 @@
 %define repo ADMinipix
 %define commit v20230918
-%{meta name license=EPICS codeberg=CasperVector version=commit,1}
+%{meta name license=EPICS codeberg=CasperVector version=commit,2}
 
 Summary:        EPICS - Minipix area detectors
 ExclusiveArch:  x86_64

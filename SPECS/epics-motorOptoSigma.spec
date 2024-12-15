@@ -1,5 +1,5 @@
 %define repo motorOptoSigma
-%define commit v20230608
+%define commit v20250114
 %{meta name license=EPICS codeberg=CasperVector version=commit,2}
 
 Summary:        EPICS - OptoSigma motion controllers

@@ -1,6 +1,6 @@
 %define repo ADKinetix
 %define commit R1-0
-%{meta name license=EPICS github=NSLS-II version=commit,1}
+%{meta name license=EPICS github=NSLS-II version=commit,2}
 
 Summary:        EPICS - PVCam driver with full Kinetix support
 Patch0:         %{name}-1_0-support.patch

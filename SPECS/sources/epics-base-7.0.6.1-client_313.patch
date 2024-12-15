@@ -1,0 +1,18 @@
+diff -ur base-7.0.6.1/modules/database/src/ioc/rsrv/camessage.c base-7.0.6.1/modules/database/src/ioc/rsrv/camessage.c
+--- base-7.0.6.1/modules/database/src/ioc/rsrv/camessage.c	2021-10-07 09:11:17.000000000 +0800
++++ base-7.0.6.1/modules/database/src/ioc/rsrv/camessage.c	2025-02-11 17:55:51.806988948 +0800
+@@ -2450,7 +2450,13 @@
+         }
+ 
+         /* ignore deprecated clients, but let newer clients identify themselves. */
+-        if (msg.m_cmmd!=CA_PROTO_VERSION && !CA_VSUPPORTED(client->minor_version_number)) {
++        if (!(
++            CA_VSUPPORTED(client->minor_version_number) ||
++            /* https://bugs.launchpad.net/epics-base/+bug/1971737 */
++            msg.m_cmmd==CA_PROTO_VERSION || msg.m_cmmd==CA_PROTO_SEARCH ||
++            (client->proto==IPPROTO_TCP && (msg.m_cmmd==CA_PROTO_CLIENT_NAME ||
++                msg.m_cmmd==CA_PROTO_HOST_NAME || msg.m_cmmd==CA_PROTO_CREATE_CHAN))
++        )) {
+             if (client->proto==IPPROTO_TCP) {
+                 /* log and error for too old clients, but keep the connection open to avoid a
+                  * re-connect loop.

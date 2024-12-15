@@ -4,7 +4,7 @@ Release:        3.el%{rhel}
 Summary:        Glib/gobject based library implementing a GenICam interface
 
 License:        GPLv2+
-URL:            https://github.com/AravisProject/aravis
+URL:            https://github.com/AravisProject/%{name}
 Source0:        %{github_archive AravisProject %{name} %{version}}
 
 BuildRequires:  gcc, gcc-c++, meson, gettext, intltool, glib2-devel

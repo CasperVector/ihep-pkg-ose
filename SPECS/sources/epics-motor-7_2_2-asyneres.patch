@@ -2,7 +2,7 @@ diff --git a/motorApp/Db/asyn_motor.db b/motorApp/Db/asyn_motor.db
 index e7089228..7da9aa78 100644
 --- a/motorApp/Db/asyn_motor.db
 +++ b/motorApp/Db/asyn_motor.db
-@@ -87,6 +87,16 @@ record(ao,"$(P)$(M)Resolution") {
+@@ -86,6 +86,16 @@ record(ao,"$(P)$(M)Resolution") {
      field(PREC, "$(PREC)")
  }
  

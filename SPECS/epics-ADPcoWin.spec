@@ -1,6 +1,6 @@
 %define repo ADPcoWin
 %define commit R6-0
-%{meta name license=Apache github=areaDetector version=commit,1}
+%{meta name license=Apache github=areaDetector version=commit,2}
 
 Summary:        EPICS - areaDetector driver for PCO cameras
 Patch0:         %{name}-6_0-build.patch

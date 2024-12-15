@@ -1,5 +1,5 @@
 %define repo usb220
-%define commit v20240722
+%define commit v20250201
 %{meta name license=EPICS codeberg=CasperVector version=commit,1}
 
 Summary:        EPICS - FUTEK USB220 devices

@@ -1,6 +1,6 @@
 %define repo motorElmo
-%define commit v20230608
-%{meta name license=EPICS codeberg=CasperVector version=commit,2}
+%define commit v20250114
+%{meta name license=EPICS codeberg=CasperVector version=commit,1}
 
 Summary:        EPICS - Elmo motion controllers
 

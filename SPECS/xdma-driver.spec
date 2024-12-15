@@ -3,7 +3,7 @@
 
 Name:           xdma-driver
 Version:        20240528
-Release:        1.%{commit}.el%{rhel}
+Release:        2.%{commit}.el%{rhel}
 Summary:        Xilinx DMA IP Reference drivers
 
 License:        GPLv2
@@ -35,4 +35,7 @@ cd -; %_file_list /usr /var > noetc.lst
 %files -f noetc.lst
 %config(noreplace) /etc/udev/rules.d/*.rules
 %doc COPYING LICENSE RELEASE readme.txt
+
+%preun
+xdma-module-make clean || true
 

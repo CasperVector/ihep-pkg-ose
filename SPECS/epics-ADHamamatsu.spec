@@ -1,6 +1,6 @@
 %define repo ADHamamatsu
 %define commit v20240710
-%{meta name license=EPICS codeberg=CasperVector version=commit,1}
+%{meta name license=EPICS codeberg=CasperVector version=commit,2}
 
 Summary:        EPICS - Driver for devices using the Hamamatsu DCAM API
 Patch0:         %{name}-20221228-support.patch

@@ -1,22 +1,6 @@
 diff -ur areaDetector-R3-11/configure/CONFIG_SITE.local areaDetector-R3-11/configure/CONFIG_SITE.local
 --- areaDetector-R3-11/configure/CONFIG_SITE.local	2021-05-27 03:43:47.000000000 +0800
 +++ areaDetector-R3-11/configure/CONFIG_SITE.local	2022-02-13 23:19:32.819471521 +0800
-@@ -34,13 +34,13 @@
- #BOOST_USE_STATIC_LINK=YES
- 
- # EPICS PVA is required for NDPluginPva, pvaDriver, and qsrv
--WITH_PVA  = YES
-+WITH_PVA  = NO
- 
- # WITH_QSRV controls whether IOCs are built with support for qsrv.
- # This is separate from WITH_PVA to allow PVA to be enabled but QSRV to be disabled.
- # This is needed on 3.14.12 where PVA is supported but QSRV is not.
- # Note that if WITH_QSRV=YES then WITH_PVA must also be YES
--WITH_QSRV = YES
-+WITH_QSRV = NO
- 
- # BLOSC is required to use the blosc compressors in the HDF5 plugin
- WITH_BLOSC     = YES
 @@ -126,7 +126,7 @@
  # ARAVIS is required for aravisGigE and ADAravis
  # Only available on Linux

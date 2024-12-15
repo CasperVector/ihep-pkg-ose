@@ -1,8 +1,78 @@
+diff --git a/caproto/_array_backend.py b/caproto/_array_backend.py
+index e10aef3b..5c22cae1 100644
+--- a/caproto/_array_backend.py
++++ b/caproto/_array_backend.py
+@@ -108,6 +108,10 @@ def python_to_epics(dtype, values, *, byteswap=True, convert_from=None):
+     return arr
+ 
+ 
++def from_bytes(s):
++    return Array("B", s)
++
++
+ def _setup():
+     # Sanity check: array item size should match struct size.
+     for _type in set(native_types) - set([ChannelType.STRING]):
+@@ -127,6 +131,7 @@ def _setup():
+                    epics_to_python=epics_to_python,
+                    python_to_epics=python_to_epics,
+                    convert_values=convert_values,
++                   from_bytes=from_bytes,
+                    )
+ 
+ 
 diff --git a/caproto/_backend.py b/caproto/_backend.py
-index ab91f158..ab5fea3b 100644
+index ab91f158..515f4465 100644
 --- a/caproto/_backend.py
 +++ b/caproto/_backend.py
-@@ -337,11 +337,9 @@ def convert_values(values, from_dtype, to_dtype, *, direction,
+@@ -27,7 +27,8 @@ _backends = {}
+ _initialized = False  # Has any backend be selected yet?
+ Backend = collections.namedtuple(
+     'Backend',
+-    'name convert_values epics_to_python python_to_epics type_map array_types'
++    'name convert_values epics_to_python python_to_epics' +
++    ' from_bytes type_map array_types'
+ )
+ 
+ 
+@@ -52,11 +53,12 @@ def select_backend(name):
+     backend.type_map = _backend.type_map
+     backend.array_types = _backend.array_types
+     backend.convert_values = _backend.convert_values
++    backend.from_bytes = _backend.from_bytes
+ 
+ 
+ backend = SimpleNamespace(
+     backend_name=None, python_to_epics=None, epics_to_python=None,
+-    type_map=None, array_types=None, convert_values=None,
++    type_map=None, array_types=None, convert_values=None, from_bytes=None,
+ )
+ 
+ 
+@@ -277,6 +279,11 @@ _custom_preprocess = {
+ }
+ 
+ 
++def chars_from_java(values):
++    s = "".join(chr(v) for v in values)
++    return backend.from_bytes(s.encode("UTF-8"))
++
++
+ def convert_values(values, from_dtype, to_dtype, *, direction,
+                    string_encoding='latin-1', enum_strings=None,
+                    auto_byteswap=True):
+@@ -316,6 +323,10 @@ def convert_values(values, from_dtype, to_dtype, *, direction,
+             len(values)
+         except TypeError:
+             values = [values]
++    if to_dtype in [ChannelType.CHAR, ChannelType.STRING] and \
++        from_dtype in [ChannelType.LONG, ChannelType.INT] and \
++        direction == ConversionDirection.FROM_WIRE:
++        values, from_dtype = chars_from_java(values), to_dtype
+ 
+     try:
+         preprocess = _custom_preprocess[(from_dtype, direction)]
+@@ -337,11 +348,9 @@ def convert_values(values, from_dtype, to_dtype, *, direction,
              return _encode_to_string_array(values, string_encoding)
          return _decode_string_list(values, string_encoding)
      if to_dtype == ChannelType.CHAR:
@@ -17,11 +87,58 @@ index ab91f158..ab5fea3b 100644
  
      byteswap = (auto_byteswap and direction == ConversionDirection.TO_WIRE)
      return backend.python_to_epics(to_dtype, values, byteswap=byteswap,
+diff --git a/caproto/_numpy_backend.py b/caproto/_numpy_backend.py
+index f4c33cbb..090991b9 100644
+--- a/caproto/_numpy_backend.py
++++ b/caproto/_numpy_backend.py
+@@ -64,6 +64,10 @@ def python_to_epics(dtype, values, *, byteswap=True, convert_from=None):
+     return np.asarray(values).astype(type_map[dtype])
+ 
+ 
++def from_bytes(s):
++    return np.frombuffer(s, dtype="u1")
++
++
+ def _setup():
+     # Sanity check: array item size should match struct size.
+     for _type in set(native_types) - set([ChannelType.STRING]):
+@@ -76,6 +80,7 @@ def _setup():
+                    epics_to_python=epics_to_python,
+                    python_to_epics=python_to_epics,
+                    convert_values=convert_values,
++                   from_bytes=from_bytes,
+                    )
+ 
+ 
 diff --git a/caproto/server/common.py b/caproto/server/common.py
-index a013ed38..efbf0c3e 100644
+index a013ed38..e5c0a355 100644
 --- a/caproto/server/common.py
 +++ b/caproto/server/common.py
-@@ -1193,7 +1193,7 @@ class Context:
+@@ -782,7 +782,13 @@ class Context:
+                        ' to be tried.', self.ca_server_port)
+ 
+         ignore_addresses = self.environ['EPICS_CAS_IGNORE_ADDR_LIST']
+-        self.ignore_addresses = ignore_addresses.split(' ')
++        def strip_port(addr):
++            if ':' in addr:
++                addr, _, specified_port = addr.partition(':')
++                warn("Port specified in EPICS_CAS_IGNORE_ADDR_LIST was ignored.")
++            return addr
++        self.ignore_addresses = list(set(strip_port(addr)
++                                         for addr in ignore_addresses.split()))
+ 
+     @property
+     def pvdb_with_fields(self):
+@@ -894,7 +900,7 @@ class Context:
+ 
+     async def _broadcaster_queue_iteration(self, addr, commands):
+         self.broadcaster.process_commands(commands)
+-        if addr in self.ignore_addresses:
++        if addr[0] in self.ignore_addresses:
+             return
+ 
+         search_replies = []
+@@ -1193,7 +1199,7 @@ class Context:
          cavc = ca.VirtualCircuit(ca.SERVER, addr, None)
          circuit = self.CircuitClass(cavc, client, self)
          self.circuits.add(circuit)
@@ -30,7 +147,7 @@ index a013ed38..efbf0c3e 100644
                        len(self.circuits))
  
          await circuit.run()
-@@ -1215,7 +1215,7 @@ class Context:
+@@ -1215,7 +1221,7 @@ class Context:
          except KeyboardInterrupt as ex:
              self.log.debug('TCP handler received KeyboardInterrupt')
              raise self.ServerExit() from ex

@@ -1,6 +1,6 @@
 %define etop_dest %{buildroot}%{etop_base}
 %define __arch_install_post true
-%{meta license=EPICS version=7.0.6.1,3}
+%{meta license=EPICS version=7.0.6.1,4}
 
 Name:           epics-base
 Summary:        Experimental Physics and Industrial Control System - Base
@@ -9,7 +9,8 @@ Source0:        https://epics.anl.gov/download/base/base-%{version}.tar.gz
 Source1:        epics-base.profile.sh
 Patch0:         %{name}-7.0.3-rdeplib_dirs.patch
 Patch1:         %{name}-7.0.6.1-cas_tcp_port.patch
-Patch2:         %{name}-7.0.3.1-softIoc.patch
+Patch2:         %{name}-7.0.6.1-client_313.patch
+Patch3:         %{name}-7.0.3.1-softIoc.patch
 BuildRequires:  gcc-c++, make, perl, readline-devel
 Requires:       perl, readline
 

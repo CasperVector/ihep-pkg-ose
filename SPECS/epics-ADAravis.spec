@@ -1,6 +1,6 @@
 %define repo ADAravis
 %define commit R2-2-1
-%{meta name license=EPICS github=areaDetector version=commit,6}
+%{meta name license=EPICS github=areaDetector version=commit,7}
 
 Summary:        EPICS - GenICam cameras using the Aravis library
 Patch0:         %{name}-1_2-files.patch

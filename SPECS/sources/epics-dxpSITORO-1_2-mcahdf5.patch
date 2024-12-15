@@ -73,15 +73,16 @@ diff -ur dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp dxpSITORO-R1-2/dxpApp/src/NDDxp.cpp
                  /* In MCA mode we force a read of the data */
                  asynPrint(pasynUser, ASYN_TRACEIO_DRIVER, 
                      "%s::%s Detected acquisition stop! Now reading data\n",
-@@ -1724,6 +1722,30 @@
+@@ -1724,6 +1722,31 @@
                      "%s::%s Detected acquisition stop! Now reading statistics\n",
                      driverName, functionName);
                  this->getAcquisitionStatistics(this->pasynUserSelf, DXP_ALL);
 +                if (arrayCallbacks)
 +                {
-+                    size_t dims[2]; dims[0] = nChannels; dims[1] = this->nChannels;
++                    size_t dims[2]; dims[1] = this->nChannels;
 +                    int channel, triggers, outputCounts;
 +                    double realTime, triggerLiveTime;
++                    getIntegerParam(mcaNumChannels, &channel); dims[0] = channel;
 +                    NDArray *pArray = this->pNDArrayPool->alloc(2, dims, NDUInt32, 0, NULL);
 +                    memcpy(pArray->pData, this->pMapRaw, dims[1] * dims[0] * sizeof(epicsUInt32));
 +                    for (channel = 0; channel < this->nChannels; channel++) {

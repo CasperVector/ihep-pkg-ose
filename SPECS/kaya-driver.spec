@@ -1,7 +1,7 @@
 %define repo KAYA_Vision_Point_Setup
 Name:           kaya-driver
 Version:        5.4.0.7320
-Release:        1.el%{rhel}
+Release:        2.el%{rhel}
 Summary:        Driver for KAYA frame grabbers
 
 License:        Proprietary
@@ -44,6 +44,9 @@ cd -; %_file_list /opt /usr /var > noetc.lst
 
 %files -f noetc.lst
 %config(noreplace) /etc/ld.so.conf.d/*.conf
+
+%preun
+kaya-module-make clean || true
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig

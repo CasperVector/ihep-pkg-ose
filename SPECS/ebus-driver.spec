@@ -1,6 +1,6 @@
 Name:           ebus-driver
 Version:        4.1.7.3988
-Release:        1.el%{rhel}
+Release:        2.el%{rhel}
 Summary:        Driver for Pleora eBUS
 
 License:        Proprietary
@@ -48,14 +48,14 @@ cd -; %_file_list /opt /usr /var > noetc.lst
 %files -f noetc.lst
 %config(noreplace) /etc/ld.so.conf.d/*.conf
 
-%pre -n ebus-driver
+%pre
 [ -f %{_libdir}/libexpat.so.0 ] || ln -s libexpat.so.1 %{_libdir}/libexpat.so.0
 
-%preun -n ebus-driver
+%preun
 if [ "$(realpath %{_libdir}/libexpat.so.0)" = %{_libdir}/libexpat.so.1 ]
 	then rm %{_libdir}/libexpat.so.0; fi
 ebus-module-make clean || true
 
-%post -n ebus-driver -p /sbin/ldconfig
-%postun -n ebus-driver -p /sbin/ldconfig
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 

@@ -1,4 +1,4 @@
-aravis xdma-driver
+aravis uldaq xdma-driver
 #bitflow-driver ebus-driver firebird-driver  # need dist_srv
 #andor-sdk2 andor-sdk3 hamamatsu-sdk picam-sdk ximea-sdk  # need dist_srv
 
