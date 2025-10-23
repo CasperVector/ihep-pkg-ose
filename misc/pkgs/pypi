@@ -1,4 +1,4 @@
-bluesky ophyd databroker pyepics caproto h5py
-hdf5plugin ipython matplotlib PyQt5 pyqtgraph pyzmq
+bluesky ophyd databroker pyepics h5py hdf5plugin
+ipython matplotlib PyQt5 pyqtgraph caproto pyzmq cbor2
 opencv-python-headless pydm suitcase-csv suitcase-json-metadata
 

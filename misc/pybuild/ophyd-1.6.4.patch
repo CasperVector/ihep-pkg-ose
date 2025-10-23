@@ -1,5 +1,25 @@
+diff --git a/ophyd/areadetector/base.py b/ophyd/areadetector/base.py
+index 92096cc6..bcfdaadc 100644
+--- a/ophyd/areadetector/base.py
++++ b/ophyd/areadetector/base.py
+@@ -285,15 +285,6 @@ class ADBase(Device):
+             if match:
+                 match_fcn(attr=attr, signal=getattr(self, attr), doc=doc)
+ 
+-    def stage(self, *args, **kwargs):
+-        ret = super().stage(*args, **kwargs)
+-        try:
+-            self.validate_asyn_ports()
+-        except RuntimeError as err:
+-            self.unstage(*args, **kwargs)
+-            raise err
+-        return ret
+-
+     def get_plugin_by_asyn_port(self, port_name):
+         '''Get the plugin which has the given asyn port name
+ 
 diff --git a/ophyd/areadetector/filestore_mixins.py b/ophyd/areadetector/filestore_mixins.py
-index e4982e8..cedbea0 100644
+index e4982e81..cedbea01 100644
 --- a/ophyd/areadetector/filestore_mixins.py
 +++ b/ophyd/areadetector/filestore_mixins.py
 @@ -285,7 +285,12 @@ class FileStoreBase(BlueskyInterface, GenerateDatumInterface):
@@ -43,67 +63,42 @@ index e4982e8..cedbea0 100644
              res[k] = v[-1]
          return res
 diff --git a/ophyd/areadetector/plugins.py b/ophyd/areadetector/plugins.py
-index 6b50e2f..707ffaa 100644
+index 6b50e2f0..af3204f5 100644
 --- a/ophyd/areadetector/plugins.py
 +++ b/ophyd/areadetector/plugins.py
-@@ -109,9 +109,12 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
-         self.enable_on_stage()
-         self.stage_sigs.move_to_end('enable', last=False)
-         self.ensure_blocking()
--        if self.parent is not None and hasattr(self.parent, 'cam'):
--            self.stage_sigs.update([('parent.cam.array_callbacks', 1),
--                                    ])
-+        try:
-+            self.parent.cam.array_callbacks
-+        except AttributeError:
-+            pass
-+        else:
-+            self.stage_sigs.update([('parent.cam.array_callbacks', 1)])
- 
-     _html_docs = ['pluginDoc.html']
-     _plugin_type = None
-@@ -196,10 +199,10 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
+@@ -196,13 +196,6 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
  
          return pixels
  
 -    def read_configuration(self):
 -        ret = super().read_configuration()
-+    def read_configuration(self, dot=False, fast=False):
-+        ret = super().read_configuration(dot, fast)
- 
+-
 -        ret.update(self.source_plugin.read_configuration())
-+        ret.update(self.source_plugin.read_configuration(dot, fast))
- 
-         return ret
- 
-@@ -211,11 +214,11 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
+-
+-        return ret
+-
+     @property
+     def source_plugin(self):
+         '''The PluginBase object that is the asyn source for this plugin.
+@@ -211,14 +204,6 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
          source_plugin = self.ad_root.get_plugin_by_asyn_port(source_port)
          return source_plugin
  
 -    def describe_configuration(self):
 -        ret = super().describe_configuration()
-+    def describe_configuration(self, dot=False):
-+        ret = super().describe_configuration(dot)
- 
-         source_plugin = self.source_plugin
+-
+-        source_plugin = self.source_plugin
 -        ret.update(source_plugin.describe_configuration())
-+        ret.update(source_plugin.describe_configuration(dot))
- 
-         return ret
- 
+-
+-        return ret
+-
+     @property
+     def _asyn_pipeline(self):
+         parent = self.ad_root.get_plugin_by_asyn_port(self.nd_array_port.get())
 diff --git a/ophyd/areadetector/trigger_mixins.py b/ophyd/areadetector/trigger_mixins.py
-index 830abe3..2f3a554 100644
+index 830abe34..8e24584c 100644
 --- a/ophyd/areadetector/trigger_mixins.py
 +++ b/ophyd/areadetector/trigger_mixins.py
-@@ -33,7 +33,7 @@ class ADTriggerStatus(DeviceStatus):
- 
-         # Notify watchers (things like progress bars) of new values
-         # at the device's natural update rate.
--        if not self.done:
-+        if not self.done and hasattr(self.device.cam, "array_counter"):
-             self.device.cam.array_counter.subscribe(self._notify_watchers)
-             # some state needed only by self._notify_watchers
-             self._name = self.device.name
 @@ -89,9 +89,7 @@ class TriggerBase(BlueskyInterface):
          # careful here: quadEM devices have areadetector components but,
          # they have no 'cam' plugin. See QuadEM initializer.
@@ -132,7 +127,7 @@ index 830abe3..2f3a554 100644
  
      def stage(self):
 diff --git a/ophyd/device.py b/ophyd/device.py
-index b2e3ec0..16c0d56 100644
+index b2e3ec07..0bed48e2 100644
 --- a/ophyd/device.py
 +++ b/ophyd/device.py
 @@ -23,7 +23,7 @@ from typing import Dict, List, Any, TypeVar, Tuple
@@ -171,16 +166,17 @@ index b2e3ec0..16c0d56 100644
                  self.log.debug("Setting %s to %r (original value: %r)",
                                 self.name,
                                 val, original_vals[sig])
-@@ -703,6 +705,8 @@ class Device(BlueskyInterface, OphydObject):
+@@ -703,6 +705,9 @@ class Device(BlueskyInterface, OphydObject):
      # connect before returning control to the user
      lazy_wait_for_connection = True
  
 +    _config_cache = None
++    _config_timeouts = None
 +
      def __init__(self, prefix='', *, name, kind=None, read_attrs=None,
                   configuration_attrs=None, parent=None, **kwargs):
          self._destroyed = False
-@@ -1230,33 +1234,38 @@ class Device(BlueskyInterface, OphydObject):
+@@ -1230,33 +1235,38 @@ class Device(BlueskyInterface, OphydObject):
          return sig
  
      @doc_annotation_forwarder(BlueskyInterface)
@@ -230,7 +226,7 @@ index b2e3ec0..16c0d56 100644
          """Provide schema & meta-data for :meth:`~BlueskyInterface.read_configuration`
  
          This keys in the `OrderedDict` this method returns must match the
-@@ -1273,7 +1282,7 @@ class Device(BlueskyInterface, OphydObject):
+@@ -1273,7 +1283,7 @@ class Device(BlueskyInterface, OphydObject):
          """
          res = OrderedDict()
          for _, component in self._get_components_of_kind(Kind.config):
@@ -239,7 +235,7 @@ index b2e3ec0..16c0d56 100644
          return res
  
      @property
-@@ -1393,8 +1402,8 @@ class Device(BlueskyInterface, OphydObject):
+@@ -1393,8 +1403,8 @@ class Device(BlueskyInterface, OphydObject):
          '''
          return cls._device_tuple
  
@@ -250,7 +246,7 @@ index b2e3ec0..16c0d56 100644
          '''Configure the device for something during a run
  
          This default implementation allows the user to change any of the
-@@ -1412,18 +1421,30 @@ class Device(BlueskyInterface, OphydObject):
+@@ -1412,18 +1422,31 @@ class Device(BlueskyInterface, OphydObject):
          (old, new) tuple of dictionaries
          Where old and new are pre- and post-configure configuration states.
          '''
@@ -259,6 +255,7 @@ index b2e3ec0..16c0d56 100644
 +        if fast:
 +            new = old.copy()
 +        old = OrderedDict((k.replace(".", "_"), old[k]) for k in old)
++        timeouts = self._config_timeouts or {}
          for key, val in d.items():
 -            if key not in self.configuration_attrs:
 +            try:
@@ -278,7 +275,7 @@ index b2e3ec0..16c0d56 100644
 +                raise ValueError("%s is not one of the "
 +                                 "configuration_fields, so it cannot be "
 +                                 "changed using configure" % key)
-+            sig.set(val, timeout=10).wait()
++            sig.set(val, timeout=timeouts.get(key, 10)).wait()
 +            if fast and key in new:
 +                new[key] = new[key].copy()
 +                new[key]["value"] = val
@@ -292,7 +289,7 @@ index b2e3ec0..16c0d56 100644
  
      def _repr_info(self):
 diff --git a/ophyd/docs/utils.py b/ophyd/docs/utils.py
-index 58cf98c..50107d4 100644
+index 58cf98ca..50107d49 100644
 --- a/ophyd/docs/utils.py
 +++ b/ophyd/docs/utils.py
 @@ -45,6 +45,7 @@ OPHYD_SKIP = {
@@ -304,10 +301,10 @@ index 58cf98c..50107d4 100644
      'event_types',
      # 'hints',
 diff --git a/ophyd/epics_motor.py b/ophyd/epics_motor.py
-index 1940fce..620c064 100644
+index 1940fceb..0afd2d69 100644
 --- a/ophyd/epics_motor.py
 +++ b/ophyd/epics_motor.py
-@@ -42,12 +42,12 @@ class EpicsMotor(Device, PositionerBase):
+@@ -42,27 +42,31 @@ class EpicsMotor(Device, PositionerBase):
      """
  
      # position
@@ -324,16 +321,18 @@ index 1940fce..620c064 100644
      offset_freeze_switch = Cpt(EpicsSignal, ".FOFF", kind="omitted", auto_monitor=True)
      set_use_switch = Cpt(EpicsSignal, ".SET", kind="omitted", auto_monitor=True)
  
-@@ -55,14 +55,16 @@ class EpicsMotor(Device, PositionerBase):
+     # configuration
      velocity = Cpt(EpicsSignal, ".VELO", kind="config", auto_monitor=True)
++    motor_vbas = Cpt(EpicsSignal, ".VBAS", kind="config", auto_monitor=True)
++    motor_vmax = Cpt(EpicsSignal, ".VMAX", kind="config", auto_monitor=True)
      acceleration = Cpt(EpicsSignal, ".ACCL", kind="config", auto_monitor=True)
      motor_egu = Cpt(EpicsSignal, ".EGU", kind="config", auto_monitor=True)
-+    motor_rep = Cpt(EpicsSignal, ".REP", kind="config", auto_monitor=True)
 +    motor_eres = Cpt(EpicsSignal, ".ERES", kind="config", auto_monitor=True)
 +    high_limit_travel = Cpt(EpicsSignal, ".HLM", kind="config", auto_monitor=True)
 +    low_limit_travel = Cpt(EpicsSignal, ".LLM", kind="config", auto_monitor=True)
  
      # motor status
++    motor_rep = Cpt(EpicsSignalRO, ".REP", kind="omitted", auto_monitor=True)
      motor_is_moving = Cpt(EpicsSignalRO, ".MOVN", kind="omitted", auto_monitor=True)
      motor_done_move = Cpt(EpicsSignalRO, ".DMOV", kind="omitted", auto_monitor=True)
      high_limit_switch = Cpt(EpicsSignalRO, ".HLS", kind="omitted", auto_monitor=True)
@@ -343,7 +342,7 @@ index 1940fce..620c064 100644
      direction_of_travel = Cpt(EpicsSignal, ".TDIR", kind="omitted", auto_monitor=True)
  
      # commands
-@@ -80,9 +82,9 @@ class EpicsMotor(Device, PositionerBase):
+@@ -80,9 +84,9 @@ class EpicsMotor(Device, PositionerBase):
                           configuration_attrs=configuration_attrs,
                           parent=parent, **kwargs)
  
@@ -355,7 +354,7 @@ index 1940fce..620c064 100644
  
          def on_limit_changed(value, old_value, **kwargs):
              """
-@@ -93,9 +95,9 @@ class EpicsMotor(Device, PositionerBase):
+@@ -93,9 +97,9 @@ class EpicsMotor(Device, PositionerBase):
                  and old_value is not None
                  and value != old_value
              ):
@@ -368,7 +367,7 @@ index 1940fce..620c064 100644
                      from_monitor=True,
                      update=True,
                  )
-@@ -106,7 +108,7 @@ class EpicsMotor(Device, PositionerBase):
+@@ -106,7 +110,7 @@ class EpicsMotor(Device, PositionerBase):
      @property
      def precision(self):
          '''The precision of the readback PV, as reported by EPICS'''
@@ -377,7 +376,7 @@ index 1940fce..620c064 100644
  
      @property
      def egu(self):
-@@ -116,7 +118,7 @@ class EpicsMotor(Device, PositionerBase):
+@@ -116,7 +120,7 @@ class EpicsMotor(Device, PositionerBase):
      @property
      @raise_if_disconnected
      def limits(self):
@@ -386,7 +385,7 @@ index 1940fce..620c064 100644
  
      @property
      @raise_if_disconnected
-@@ -167,7 +169,7 @@ class EpicsMotor(Device, PositionerBase):
+@@ -167,7 +171,7 @@ class EpicsMotor(Device, PositionerBase):
          self._started_moving = False
  
          status = super().move(position, **kwargs)
@@ -395,7 +394,7 @@ index 1940fce..620c064 100644
          try:
              if wait:
                  status_wait(status)
-@@ -200,7 +202,7 @@ class EpicsMotor(Device, PositionerBase):
+@@ -200,7 +204,7 @@ class EpicsMotor(Device, PositionerBase):
          '''
          self.set_use_switch.put(1, wait=True)
          try:
@@ -404,7 +403,7 @@ index 1940fce..620c064 100644
          finally:
              self.set_use_switch.put(0, wait=True)
  
-@@ -235,10 +237,10 @@ class EpicsMotor(Device, PositionerBase):
+@@ -235,10 +239,10 @@ class EpicsMotor(Device, PositionerBase):
  
      def check_value(self, pos):
          '''Check that the position is within the soft limits'''
@@ -417,7 +416,7 @@ index 1940fce..620c064 100644
      def _pos_changed(self, timestamp=None, value=None, **kwargs):
          '''Callback from EPICS, indicating a change in position'''
          self._set_position(value)
-@@ -276,10 +278,10 @@ class EpicsMotor(Device, PositionerBase):
+@@ -276,10 +280,10 @@ class EpicsMotor(Device, PositionerBase):
              # Check the severity of the alarm field after motion is complete.
              # If there is any alarm at all warn the user, and if the alarm is
              # greater than what is tolerated, mark the move as unsuccessful
@@ -430,7 +429,7 @@ index 1940fce..620c064 100644
                  if severity > self.tolerated_alarm:
                      self.log.error('Motion failed: %s is in an alarm state '
                                     'status=%s severity=%s',
-@@ -299,7 +301,7 @@ class EpicsMotor(Device, PositionerBase):
+@@ -299,7 +303,7 @@ class EpicsMotor(Device, PositionerBase):
          except DisconnectedError:
              # TODO there might be more in this that gets lost
              rep = {'position': 'disconnected'}
@@ -440,7 +439,7 @@ index 1940fce..620c064 100644
  
      def get_lim(self, flag):
 diff --git a/ophyd/flyers.py b/ophyd/flyers.py
-index b9f9055..e8d017b 100644
+index b9f90557..e8d017be 100644
 --- a/ophyd/flyers.py
 +++ b/ophyd/flyers.py
 @@ -74,7 +74,7 @@ class FlyerInterface(BlueskyInterface):
@@ -518,7 +517,7 @@ index b9f9055..e8d017b 100644
                      }
  
 diff --git a/ophyd/ophydobj.py b/ophyd/ophydobj.py
-index 4f1cf69..fb64b9c 100644
+index 4f1cf693..fb64b9cc 100644
 --- a/ophyd/ophydobj.py
 +++ b/ophyd/ophydobj.py
 @@ -134,7 +134,7 @@ class OphydObject:
@@ -584,7 +583,7 @@ index 4f1cf69..fb64b9c 100644
      def attr_name(self):
          return self._attr_name
 diff --git a/ophyd/positioner.py b/ophyd/positioner.py
-index 0929734..5e4fbc1 100644
+index 09297349..5e4fbc18 100644
 --- a/ophyd/positioner.py
 +++ b/ophyd/positioner.py
 @@ -370,13 +370,13 @@ class SoftPositioner(PositionerBase):
@@ -636,7 +635,7 @@ index 0929734..5e4fbc1 100644
  
      def check_value(self, pos):
 diff --git a/ophyd/pseudopos.py b/ophyd/pseudopos.py
-index 7d47e38..0da3c56 100644
+index 7d47e38e..0da3c562 100644
 --- a/ophyd/pseudopos.py
 +++ b/ophyd/pseudopos.py
 @@ -164,11 +164,12 @@ class PseudoSingle(Device, SoftPositioner):
@@ -656,7 +655,7 @@ index 7d47e38..0da3c56 100644
              d['lower_ctrl_limit'] = low_limit
              d['units'] = self.egu
 diff --git a/ophyd/signal.py b/ophyd/signal.py
-index 632cee9..56b260e 100644
+index 632cee95..110cb82d 100644
 --- a/ophyd/signal.py
 +++ b/ophyd/signal.py
 @@ -88,7 +88,7 @@ class Signal(OphydObject):
@@ -724,7 +723,7 @@ index 632cee9..56b260e 100644
  
      @property
      def limits(self):
-@@ -580,12 +580,13 @@ class DerivedSignal(Signal):
+@@ -580,14 +580,15 @@ class DerivedSignal(Signal):
          '''Signal that this one is derived from'''
          return self._derived_from
  
@@ -740,8 +739,11 @@ index 632cee9..56b260e 100644
 -        derived_desc = self._derived_from.describe()[self._derived_from.name]
 +        derived_desc = self._derived_from.describe(dot)[names[1]]
          derived_desc.update(desc)
-         return {self.name: derived_desc}
+-        return {self.name: derived_desc}
++        return {self.vname(dot): derived_desc}
  
+     def _update_metadata_from_callback(self, **kwargs):
+         updated_md = {key: kwargs[key] for key in self.metadata_keys
 @@ -1242,7 +1243,7 @@ class EpicsSignalBase(Signal):
          super().put(value=value, timestamp=metadata.pop('timestamp'),
                      metadata=metadata, force=True)
@@ -779,7 +781,7 @@ index 632cee9..56b260e 100644
  
  class ArrayAttributeSignal(AttributeSignal):
 diff --git a/ophyd/sim.py b/ophyd/sim.py
-index 544685e..1934938 100644
+index 544685e3..1934938a 100644
 --- a/ophyd/sim.py
 +++ b/ophyd/sim.py
 @@ -78,9 +78,9 @@ class EnumSignal(Signal):

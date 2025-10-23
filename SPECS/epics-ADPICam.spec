@@ -1,5 +1,5 @@
 %define repo ADPICam
-%define commit 674983bc
+%define commit 0d86faec
 %{meta name license=EPICS github=areaDetector version=commit,3}
 %if %{rhel} == 7
 %define cmd_flags GNU_DIR=/opt/rh/devtoolset-8/root/usr \\\
@@ -7,9 +7,8 @@
 %endif
 
 Summary:        EPICS - Princeton Instruments cameras using the PICam library
-Patch0:         %{name}-674983bc-support.patch
-Patch1:         %{name}-674983bc-readout.patch
-Patch2:         %{name}-674983bc-printf.patch
+Patch0:         %{name}-0d86faec-support.patch
+Patch1:         %{name}-0d86faec-bugs.patch
 BuildRequires:  picam-sdk
 Requires:       picam-sdk
 %if %{rhel} == 7

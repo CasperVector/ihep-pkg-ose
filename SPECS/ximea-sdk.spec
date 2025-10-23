@@ -1,5 +1,5 @@
 %{eval arch}
-%define dversion 20240723
+%define dversion 20250603
 
 Name:           ximea-sdk
 Version:        4_27_10

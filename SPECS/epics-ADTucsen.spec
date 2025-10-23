@@ -1,5 +1,5 @@
 %define repo ADTucsen
-%define commit v20241203
+%define commit v20250421
 %define cmd_flags CMD_CXXFLAGS='%{optflags} -Wno-write-strings'
 %{meta name license=EPICS codeberg=CasperVector version=commit,1}
 

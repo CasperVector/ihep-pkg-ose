@@ -166,14 +166,14 @@ diff -ur motorKohzu/kohzuApp/src/drvSC800.cc motorKohzu/kohzuApp/src/drvSC800.cc
 +    status.Bits.RA_MOVING = (str_move != 0) ? 1 : 0;
 +    if (cntrl->aries) {
 +        status.Bits.RA_HOME = (str_orgg != 0) ? 1 : 0;
-+        status.Bits.RA_DONE = (str_move == 0) || (str_move == 2 && motorData == 1) ? 1 : 0;
++        status.Bits.RA_DONE = (str_move == 0) ? 1 : 0;
 +        plusLS = (str_cwlm == 2) || (str_cwlm == 3);
 +        minusLS = (str_cwlm == 1) || (str_cwlm == 3);
 +    } else {
 +        status.Bits.RA_HOME = (str_orgg != 0 || str_norg != 0) ? 1 : 0;
 +        status.Bits.RA_DONE = (str_move == 0) ? 1 : 0;
-+        plusLS = (str_cwlm == 1);
-+        minusLS = (str_ccwl == 1);
++        plusLS = (str_cwlm != 0);
++        minusLS = (str_ccwl != 0);
 +    }
  
     /* Parse motor position */

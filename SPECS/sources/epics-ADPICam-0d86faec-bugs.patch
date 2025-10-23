@@ -1,0 +1,183 @@
+diff -ur ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd
+--- ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd	2025-07-29 06:35:36.000000000 +0800
++++ ADPICam/iocs/PICamIOC/iocBoot/iocPICam/st.cmd	2025-09-10 00:15:25.932508607 +0800
+@@ -11,6 +11,7 @@
+ epicsEnvSet("XSIZE",  "2048")
+ epicsEnvSet("YSIZE",  "2048")
+ epicsEnvSet("NCHANS", "2048")
++epicsEnvSet("CBUFFS", "500")
+ # The search path for database files
+ epicsEnvSet("EPICS_DB_INCLUDE_PATH", "$(ADCORE)/db")
+ 
+@@ -26,13 +27,10 @@
+ asynSetTraceIOMask($(PORT), 0, 2)
+ #asynSetTraceMask($(PORT),0,0xff)
+ 
+-dbLoadRecords("$(ADCORE)/db/ADBase.template", "P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
+ dbLoadRecords("$(ADPICAM)/db/PICam.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
+-
+ # Create a standard arrays plugin, set it to get data from Driver.
+ NDStdArraysConfigure("Image1", 3, 0, "$(PORT)", 0)
+-dbLoadRecords("$(ADCORE)/db/NDPluginBase.template","P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,NDARRAY_PORT=$(PORT),NDARRAY_ADDR=0")
+-dbLoadRecords("$(ADCORE)/db/NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,TYPE=Int16,SIZE=16,FTVL=SHORT,NELEMENTS=20000000")
++dbLoadRecords("$(ADCORE)/db/NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,NDARRAY_PORT=$(PORT),TYPE=Int16,FTVL=SHORT,NELEMENTS=20000000")
+ 
+ # Load all other plugins using commonPlugins.cmd
+ < $(ADCORE)/iocBoot/commonPlugins.cmd
+@@ -40,6 +38,9 @@
+ 
+ #asynSetTraceMask($(PORT),0,0x09)
+ iocInit()
++dbpf $(PREFIX)cam1:SizeX $(XSIZE)
++dbpf $(PREFIX)cam1:SizeY $(YSIZE)
++epicsThreadSleep 4
+ 
+ # save things every thirty seconds
+ create_monitor_set("auto_settings.req", 30, "P=$(PREFIX)")
+diff -ur ADPICam/PICamApp/Db/PICam.template ADPICam/PICamApp/Db/PICam.template
+--- ADPICam/PICamApp/Db/PICam.template	2025-07-29 06:35:36.000000000 +0800
++++ ADPICam/PICamApp/Db/PICam.template	2025-09-10 00:15:25.936508673 +0800
+@@ -3,6 +3,9 @@
+ # See LICENSE file.
+ #
+ # Database file for PICam Driver
++
++include "ADBase.template"
++
+ record(stringin, "$(P)$(R)VersionNumber")
+ {
+    field(DTYP, "asynOctetRead")
+@@ -2718,7 +2721,6 @@
+ 
+ record(mbbo, "$(P)$(R)ReadoutPortCount")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_READOUT_PORT_COUNT")
+    field(VAL,  "1")
+@@ -3165,7 +3167,6 @@
+ ################## Sensor Layout
+ record(longout, "$(P)$(R)ActiveBottomMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_BOTTOM_MARGIN")
+ }
+@@ -3179,7 +3180,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveHeight")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_HEIGHT")
+ }
+@@ -3193,7 +3193,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveLeftMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_LEFT_MARGIN")
+ }
+@@ -3207,7 +3206,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveRightMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_RIGHT_MARGIN")
+ }
+@@ -3221,7 +3219,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveTopMargin")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_TOP_MARGIN")
+ }
+@@ -3235,7 +3232,6 @@
+ 
+ record(longout, "$(P)$(R)ActiveWidth")
+ {
+-   field(PINI, "YES")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))PICAM_ACTIVE_WIDTH")
+ }
+diff -ur ADPICam/PICamApp/src/ADPICam.cpp ADPICam/PICamApp/src/ADPICam.cpp
+--- ADPICam/PICamApp/src/ADPICam.cpp	2025-07-29 06:35:36.000000000 +0800
++++ ADPICam/PICamApp/src/ADPICam.cpp	2025-09-10 00:15:25.936508673 +0800
+@@ -167,49 +167,16 @@
+ 
+     ADPICam_Instance = this;
+ 
+-    /*
+-    Connect a SOPHIA 2048BX virtual camera to load -- if no physical camera
+-    is plugged in when Available Cameras are generated, the virtual camera
+-    gets used.
+-    */
+-        PicamModel demoToConnect = PicamModel_Sophia2048BExcelon;
+-        error = Picam_ConnectDemoCamera(demoToConnect,
+-                "CamNotFoundOnInit", &demoId);
++        error = Picam_OpenFirstCamera(&currentCameraHandle);
+         if (error != PicamError_None) {
+         Picam_GetEnumerationString(PicamEnumeratedType_Error,
+                         error,
+                                         &errorString);
+-        const char *demoModelName;
+-        Picam_GetEnumerationString(PicamEnumeratedType_Model,
+-                        demoToConnect,
+-                                        &demoModelName);
+-        asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+-                        "-------------------------------------------------\n"
+-                        "Cannot connect to demo camera %s."
+-                        "Cannot run without a detector.\n"
+-                        "Error=%s \n"
+-                        "-------------------------------------------------\n",
+-                                        demoModelName,
+-                                        errorString);
+-        Picam_DestroyString(demoModelName);
+-        Picam_DestroyString(errorString);
+-        return;
+-        }
+-        error = Picam_OpenCamera(&demoId, &currentCameraHandle);
+-        if (error != PicamError_None) {
+-        Picam_GetEnumerationString(PicamEnumeratedType_Error,
+-                        error,
+-                                        &errorString);
+-        const char *demoModelName;
+-        Picam_GetEnumerationString(PicamEnumeratedType_Model,
+-                        demoToConnect,
+-                                        &demoModelName);
+         asynPrint(pasynUserSelf, ASYN_TRACE_ERROR,
+                 "------------------------------------------------\n"
+-                        "Trouble opening demo camera %s \n%s"
++                        "Trouble opening camera\n%s\n"
+                         "------------------------------------------------\n",
+-                                        demoModelName, errorString);
+-        Picam_DestroyString(demoModelName);
++                                        errorString);
+         Picam_DestroyString(errorString);
+         return;
+         }
+@@ -3764,8 +3731,8 @@
+         }
+         else {
+ 
+-        	if (minX < 1) {
+-                minX = 1;
++        	if (minX < 0) {
++                minX = 0;
+             } else if (minX > numXPixels-binX) {
+             	minX = numXPixels;
+             }
+@@ -3803,8 +3770,8 @@
+         }
+         else {
+ 
+-        	if (minY < 1){
+-				minY = 1;
++        	if (minY < 0){
++				minY = 0;
+ 			}
+ 			else if (minY > numYPixels){
+ 				minY = numYPixels;

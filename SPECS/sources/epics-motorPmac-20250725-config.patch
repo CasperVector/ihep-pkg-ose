@@ -1,0 +1,10 @@
+diff -ur motorpmac/configure/CONFIG_SITE.linux-x86_64.Common motorpmac/configure/CONFIG_SITE.linux-x86_64.Common
+--- motorpmac/configure/CONFIG_SITE.linux-x86_64.Common	2025-07-25 02:34:40.000000000 +0800
++++ motorpmac/configure/CONFIG_SITE.linux-x86_64.Common	2025-07-25 03:10:24.430770079 +0800
+@@ -3,5 +3,5 @@
+ SSH_INCLUDE     = -I$(SSH)/include
+ 
+ # Build unit tests (requires BOOST)
+-WITH_BOOST = YES
++WITH_BOOST = NO
+ 

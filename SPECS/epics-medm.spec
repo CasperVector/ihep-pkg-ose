@@ -1,4 +1,4 @@
-%{meta license=EPICS version=3_1_17,3}
+%{meta license=EPICS version=3_1_17,4}
 
 Name:           epics-medm
 Summary:        EPICS - Motif Editor and Display Manager
@@ -7,11 +7,8 @@ Source0:        https://epics.anl.gov/download/extensions/extensionsTop_20120904
 Source1:        %{github_archive epics-extensions medm MEDM%{version}}
 Source2:        https://epics.anl.gov/EpicsDocumentation/ExtensionsManuals/MEDM/medmfonts.ali.txt
 
-BuildRequires:  epics-base, gcc-c++, make, perl
-BuildRequires:  libX11-devel, libXft-devel, fontconfig-devel
-BuildRequires:  libjpeg-devel, libpng-devel, motif-devel, dos2unix
-Requires:       epics-base, libX11, libXft, motif
-Requires:       fontconfig, libjpeg, libpng, xorg-x11-fonts-Type1
+BuildRequires:  epics-base, gcc-c++, make, libX11-devel, motif-devel, dos2unix
+Requires:       epics-base, libX11, motif, xorg-x11-fonts-Type1
 Requires:       xorg-x11-fonts-misc, xorg-x11-fonts-100dpi, xorg-x11-fonts-75dpi
 Requires:       xorg-x11-fonts-ISO8859-1-100dpi, xorg-x11-fonts-ISO8859-1-75dpi
 
@@ -28,7 +25,7 @@ mv medm-MEDM%{version} src/medm
 %install
 . %{_specdir}/fn-build.sh
 sed -i '/^EPICS_BASE=/ s@=.*@=%{etop_base}@' configure/RELEASE
-make %{?_smp_mflags} %{cmd_flags} DESTDIR=%{buildroot} \
+make -k %{?_smp_mflags} %{cmd_flags} DESTDIR=%{buildroot} \
 	INSTALL_LOCATION=%{buildroot}%{etop_base} install ||
 	make -j1 %{cmd_flags} DESTDIR=%{buildroot} \
 		INSTALL_LOCATION=%{buildroot}%{etop_base} install

@@ -1,14 +1,14 @@
 Name:           ebus-driver
 Version:        4.1.7.3988
-Release:        2.el%{rhel}
+Release:        3.el%{rhel}
 Summary:        Driver for Pleora eBUS
 
 License:        Proprietary
 URL:            https://www.pleora.com/
-Source0:        %{dist_srv}/picam_sdk-5.12.2.run
+Source0:        %{dist_srv}/picam_sdk-v5.12.2.run
 Patch0:         %{name}-4.1.7.3988-pkg.patch
 
-Requires:       expat, gcc, make, kernel-devel
+Requires:       gcc, make, kernel-devel
 %if %{rhel} == 8
 Requires:       elfutils-libelf-devel
 %endif
@@ -17,9 +17,11 @@ Requires:       elfutils-libelf-devel
 
 %prep
 %setup -T -c -n %{name}
-install -m 0755 %{S:0} . && ./picam_sdk-*.run --keep --noexec
+install -m 0755 %{S:0} .; ./picam_sdk-*.run --keep --noexec
 cd install_image; patch -p1 < %{P:0}
 cd pleora; rm bin/*.bin lib/libPvGUI.so*
+find module share/samples share/doc -type f -exec chmod 0644 '{}' ';'
+chmod 0755 share/samples/*.sh
 cd module/*/; mv libebTransportLayer-%{_arch}.a \
 	libebTransportLayer-%{_arch}.a_shipped
 cd ../../bin; rm install_daemon.sh install_libraries.sh \
@@ -47,14 +49,6 @@ cd -; %_file_list /opt /usr /var > noetc.lst
 
 %files -f noetc.lst
 %config(noreplace) /etc/ld.so.conf.d/*.conf
-
-%pre
-[ -f %{_libdir}/libexpat.so.0 ] || ln -s libexpat.so.1 %{_libdir}/libexpat.so.0
-
-%preun
-if [ "$(realpath %{_libdir}/libexpat.so.0)" = %{_libdir}/libexpat.so.1 ]
-	then rm %{_libdir}/libexpat.so.0; fi
-ebus-module-make clean || true
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig

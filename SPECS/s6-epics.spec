@@ -1,5 +1,5 @@
 Name:           s6-epics
-Version:        0.0.3
+Version:        0.0.4
 Release:        1.el%{rhel}
 Summary:        Managing EPICS IOCs with s6
 
