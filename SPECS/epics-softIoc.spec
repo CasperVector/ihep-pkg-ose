@@ -15,8 +15,9 @@ Requires:       epics-iocStats
 %setup -c %{name}
 mkdir softIoc
 mv base-%{version}/modules/database/src/std/softIoc softIoc/src
-cp -r %{epics_root}/utils/configure softIoc/configure
-sed '/TOP/ s/=.*/= ./' < %{epics_root}/utils/app.mk > softIoc/Makefile
+cp -r %{epics_root}/utils/exampleIOC/configure softIoc/configure
+sed '/TOP/ s/=.*/= ./' \
+	< %{epics_root}/utils/exampleIOC/exampleApp/Makefile > softIoc/Makefile
 cd softIoc; patch -p1 < %{P:0}; sed -i \
 	'/epicsInstallDir/ s@.*@#define EPICS_BASE "%{etop_base}"@' src/softMain.cpp
 

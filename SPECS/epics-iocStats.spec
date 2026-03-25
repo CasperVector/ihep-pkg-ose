@@ -1,9 +1,10 @@
 %define repo iocStats
 %define commit 3.2.0
-%{meta name license=EPICS github=epics-modules version=commit,1}
+%{meta name license=EPICS github=epics-modules version=commit,2}
 
 Summary:        EPICS - IOC status and control
 Patch0:         %{name}-3.2.0-files.patch
+Patch1:         %{name}-3.2.0-mingw.patch
 BuildRequires:  epics-support, gcc-c++, make
 Requires:       epics-support
 

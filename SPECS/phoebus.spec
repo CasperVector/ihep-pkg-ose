@@ -2,7 +2,7 @@
 
 Name:           phoebus
 Version:        4.6.10
-Release:        1.%{commit}.el%{rhel}
+Release:        2.%{commit}.el%{rhel}
 Summary:        Control System Studio (the Phoebus branch)
 License:        EPLv1.0
 URL:            https://controlssoftware.sns.ornl.gov/css_phoebus/

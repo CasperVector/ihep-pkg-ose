@@ -1,0 +1,48 @@
+diff -ur ADPilatus/pilatusApp/src/pilatusDetector.cpp ADPilatus/pilatusApp/src/pilatusDetector.cpp
+--- ADPilatus/pilatusApp/src/pilatusDetector.cpp	2022-05-18 06:45:59.000000000 +0800
++++ ADPilatus/pilatusApp/src/pilatusDetector.cpp	2026-03-12 03:40:13.953028593 +0800
+@@ -20,6 +20,9 @@
+ #include <fcntl.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <libgen.h>
++#include <dirent.h>
++#include <sys/types.h>
+ #include <cbf_ad.h>
+ #include <tiffio.h>
+ 
+@@ -380,8 +383,12 @@
+     time_t acqStartTime;
+     double deltaTime=0.;
+     int status=-1;
++    DIR *dir;
++    char fileName_[MAX_FILENAME_LEN], *filePath;
+     const char *functionName = "waitForFileToExist";
+ 
++    strcpy(fileName_, fileName);
++    filePath = dirname(fileName_);
+     if (pStartTime) epicsTimeToTime_t(&acqStartTime, pStartTime);
+     epicsTimeGetCurrent(&tStart);
+ 
+@@ -414,6 +421,9 @@
+             setIntegerParam(ADStatus, ADStatusAborted);
+             return(asynError);
+         }
++        dir = opendir(filePath);
++        readdir(dir);
++        closedir(dir);
+         epicsTimeGetCurrent(&tCheck);
+         deltaTime = epicsTimeDiffInSeconds(&tCheck, &tStart);
+     }
+diff -ur ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd
+--- ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd	2022-05-18 06:45:59.000000000 +0800
++++ ADPilatus/iocs/pilatusIOC/iocBoot/iocPilatus/st.cmd	2022-08-17 23:10:18.974559585 +0800
+@@ -28,7 +28,7 @@
+ #asynSetTraceIOMask("camserver",0,2)
+ #asynSetTraceMask("camserver",0,9)
+ # Set the input and output terminators.
+-asynOctetSetInputEos("camserver", 0, "\0x18")
++asynOctetSetInputEos("camserver", 0, "\x18")
+ asynOctetSetOutputEos("camserver", 0, "\n")
+ 
+ pilatusDetectorConfig("$(PORT)", "camserver", $(XSIZE), $(YSIZE), 0, 0)

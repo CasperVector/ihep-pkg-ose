@@ -1,4 +1,5 @@
 kernel-rt kernel-rt-devel docker-ce
 re2c libicns-utils meson zeromq-devel
 procServ
+#fping  # need dist_srv
 

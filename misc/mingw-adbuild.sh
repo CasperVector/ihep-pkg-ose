@@ -8,10 +8,16 @@ for mod in "$@"; do cd "$mod"
 		sed -n '/#!MOTOR_/ { s/^#!//; s@=.*@=$(TOP)/../..@; p }' \
 			EXAMPLE_RELEASE.local >> RELEASE)
 	done;; esac
-	for d in iocs/*IOC/iocBoot/ioc*; do
-		(cd "$d"; grep -q relPaths Makefile ||
-		sed -i '/TARGETS *=/ s/$/ relPaths.sh/' Makefile)
-	done
+	case "$EPICS_HOST_ARCH" in win*) for d in iocs/*IOC/iocBoot/ioc*; do
+		case "$EPICS_HOST_ARCH" in
+		*-mingw)
+			(cd "$d"; grep -q relPaths Makefile ||
+			sed -i '/TARGETS *=/ s/$/ relPaths.sh/' Makefile);;
+		*)
+			(cd "$d"; grep -q dllPath Makefile ||
+			sed -i '/TARGETS *=/ s/$/ dllPath.bat/' Makefile);;
+		esac
+	done;; esac
 	make -j"$(nproc)"
 cd -; done
 

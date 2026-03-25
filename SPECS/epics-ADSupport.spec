@@ -1,13 +1,14 @@
 %define repo ADSupport
 %define commit R1-10
-%define acommit R3-11
+%define acommit R3-14
 %{meta name license=MIT github=areaDetector}
 
 Version:        %(echo %{commit}.%{acommit} | sed 's/\<R//g; s/-/_/g')
-Release:        5.el%{rhel}
+Release:        1.el%{rhel}
 Summary:        EPICS - Support libraries for areaDetector
 Source1:        %{github_archive areaDetector areaDetector %{acommit}}
 Patch0:         %{name}-1_10-config.patch
+Patch1:         %{name}-1_10-mingw.patch
 BuildRequires:  epics-support, gcc-c++, make, libXext-devel
 Requires:       epics-support, libXext
 
@@ -26,7 +27,7 @@ cp EXAMPLE_RELEASE_LIBS.local RELEASE_LIBS.local
 cp EXAMPLE_RELEASE.local RELEASE.local
 sed -i 's@$(TOP)/\.\./\.\./\.\.@%{epics_root}/areaDetector@' \
 	RELEASE_PRODS_INCLUDE
-cd ..; cat %{P:0} | patch -p1
+cd ..; patch -p1 < %{P:0}
 cd ..; _mv_build areaDetector %{etop_ad}
 cd %{epics_root}; make release MODULE_LIST=AREA_DETECTOR
 

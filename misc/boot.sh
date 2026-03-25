@@ -36,8 +36,9 @@ mirror_epel='https://archives.fedoraproject.org/pub/archive/epel'
 pubkey_epel="RPM-GPG-KEY-EPEL-$ver"
 mirror_docker='https://download.docker.com/linux/centos'
 pubkey_docker='RPM-GPG-KEY-Docker'
-mirror_qd='https://quantumdetectors.com/rpm/el7'
+mirror_qd='https://quantumdetectors.com/rpm/el9'
 pubkey_qd='RPM-GPG-KEY-qd'
+dist_srv='http://127.0.0.1:8888/dist'
 rpm_root=RPMS/"$(arch)"
 
 inst() {
@@ -110,8 +111,8 @@ src_get() {
 		done | awk '/:\/\// { print $2 }' | sort -u > /tmp/fetch.txt
 		./misc/fetch.sh /tmp/fetch.txt
 		return; fi
-	wget -nc -P SOURCES "$mirror_docker"/docker-ce.repo \
-		"$mirror_qd"/qd.repo "$mirror_qd/$pubkey_qd"
+	wget -nc -P SOURCES "$mirror_docker"/docker-ce.repo
+	#wget -nc -P SOURCES "$mirror_qd"/qd.repo "$dist_srv/$pubkey_qd"-el7
 	[ -f SOURCES/"$pubkey_docker" ] ||
 		wget -O SOURCES/"$pubkey_docker" "$mirror_docker"/gpg
 	for f in $pkgs_boot; do
@@ -123,26 +124,30 @@ src_get() {
 epel_prep() {
 	(cd /etc/yum.repos.d;
 if [ "$ver" -eq 7 ]; then
+	sudo sed -i '/^\[extras\]/,/^$/ s/^enabled=0/enabled=1/' CentOS-Base.repo
 	sudo sed -i 's/^enabled=0/enabled=1/' CentOS-rt.repo
 else
-	sudo sed -i 's/^enabled=0/enabled=1/' Rocky-RT.repo Rocky-PowerTools.repo
+	sudo sed -i 's/^enabled=0/enabled=1/' \
+		Rocky-Extras.repo Rocky-RT.repo Rocky-PowerTools.repo
 fi
 	)
-	yyum --enablerepo=extras wget epel-release
+	yyum wget epel-release
 	inst SOURCES/docker-ce.repo /etc/yum.repos.d
 	inst SOURCES/"$pubkey_docker" /etc/pki/rpm-gpg
 	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_epel" "$pubkey_docker")
+	#inst SOURCES/qd.repo /etc/yum.repos.d
+	#sudo sed -i "s/el9\>/el$ver/; s/http\>/https/g" /etc/yum.repos.d/qd.repo
+	#inst SOURCES/"$pubkey_qd"-el7 /etc/pki/rpm-gpg/"$pubkey_qd"
+	#(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_qd")
 if [ "$ver" -eq 7 ]; then
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
 		-e "s@http://download\\.fedoraproject\\.org/pub/epel/@$mirror_epel/@" \
 		/etc/yum.repos.d/epel.repo
-	yyum --enablerepo=extras centos-release-scl-rh
+	yyum centos-release-scl-rh
 	sudo sed -i -e 's/^#baseurl=/baseurl=/' -e 's/^mirrorlist=/#&/' \
 		-e "s@http://mirror\\.centos\\.org/centos/7/@$mirror/centos-vault/7.9.2009/@" \
 		/etc/yum.repos.d/CentOS-SCLo-scl-rh.repo
-	inst SOURCES/qd.repo /etc/yum.repos.d
-	inst SOURCES/"$pubkey_qd" /etc/pki/rpm-gpg
-	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_scl" "$pubkey_qd")
+	(cd /etc/pki/rpm-gpg; sudo rpm --import "$pubkey_scl")
 else
 	sudo sed -i -e '/baseurl/ s/^#//' -e '/^metalink/ s/^/#/' \
 		-e "s@https://download\.example/pub/epel/@$mirror/epel/@" \
@@ -158,6 +163,13 @@ epel_get() {
 		return; fi
 	epel_prep; rm -rf "$rpm_root"/epel; mkdir -p "$rpm_root"/epel
 	rpm_url $pkgs_epel | xargs wget -nc -P "$rpm_root"/epel
+#if [ "$ver" -eq 7 ]; then
+#	wget -nc -P "$rpm_root"/epel \
+#		"$dist_srv"/xspress3-autocalib-1-18.el7.x86_64.rpm
+#else
+#	wget -nc -P "$rpm_root"/epel \
+#		"$dist_srv"/xspress3-autocalib-2.1.0-1.x86_64.rpm
+#fi
 	rpm -K "$rpm_root"/epel/*; repo_mk
 }
 

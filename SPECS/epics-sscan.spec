@@ -1,10 +1,11 @@
 %define repo sscan
 %define commit R2-11-5
 %define opimask */arrayPlot.*
-%{meta name license=EPICS github=epics-modules version=commit,3}
+%{meta name license=EPICS github=epics-modules version=commit,4}
 
 Summary:        EPICS - sscan record and related software
 Patch0:         %{name}-2_11_4-app-libs-files.patch
+Patch1:         %{name}-2_11_5-bugs.patch
 BuildRequires:  epics-autosave, epics-calc, epics-iocStats, gcc-c++, make
 Requires:       epics-autosave, epics-calc, epics-iocStats
 

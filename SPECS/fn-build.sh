@@ -14,8 +14,9 @@ _file_list() {
 
 _iocboot_makefiles() {
 	local d
-	cp "$1"/utils/iocBoot.mk "$2"/Makefile
-	for d in "$2"/ioc*/; do cp "$1"/utils/ioc.mk "$d"/Makefile; done
+	cp "$1"/utils/exampleIOC/iocBoot/Makefile "$2"/Makefile
+	for d in "$2"/ioc*/; do
+		cp "$1"/utils/exampleIOC/iocBoot/iocExample/Makefile "$d"/Makefile; done
 }
 
 _fix_perm() {

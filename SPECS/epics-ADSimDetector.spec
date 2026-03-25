@@ -1,6 +1,6 @@
 %define repo ADSimDetector
-%define commit e6c4a708
-%{meta name license=MIT github=areaDetector version=2_10,4.commit}
+%define commit R2-11
+%{meta name license=MIT github=areaDetector version=commit,1}
 
 Summary:        EPICS - A simulation driver for areaDetector
 

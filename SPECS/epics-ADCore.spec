@@ -1,11 +1,11 @@
 %define repo ADCore
-%define commit R3-11
+%define commit R3-14
 %define etop_ad %{epics_root}/areaDetector
 %define opimask */arrayPlot.* edl/simTop.edl
 %{meta name license=MIT github=areaDetector version=commit,5}
 
 Summary:        EPICS - areaDetector base classes and standard plugins
-Patch0:         %{name}-3_11-bugs.patch
+Patch0:         %{name}-3_14-bugs.patch
 BuildRequires:  epics-ADSupport, epics-asyn, gcc-c++, make, libXext-devel
 Requires:       epics-ADSupport, epics-asyn, epics-autosave, epics-busy
 Requires:       epics-calc, epics-iocStats, epics-seq, epics-sscan, libXext
@@ -20,7 +20,7 @@ _mv_commit %{repo} %{commit}
 cd %{repo}/iocBoot
 cp EXAMPLE_commonPlugins.cmd commonPlugins.cmd
 cp EXAMPLE_commonPlugin_settings.req commonPlugin_settings.req
-cd ..; cat %{P:0} | patch -p1
+cd ..; patch -p1 < %{P:0}
 cd ..; _mv_build %{repo} %{etop_ad}/%{repo}
 
 %build

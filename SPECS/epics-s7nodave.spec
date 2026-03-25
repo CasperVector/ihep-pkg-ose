@@ -20,6 +20,7 @@ Requires:       epics-asyn, epics-autosave, epics-iocStats
 %setup -c -n %{name}
 %_moreapps_prep
 chmod 0755 iocBoot/iocNodave/st.cmd
-cp %{epics_root}/utils/appMain.c s7nodaveApp/src/s7nodaveMain.cpp
+cp %{epics_root}/utils/exampleIOC/exampleApp/src/exampleMain.c \
+	s7nodaveApp/src/s7nodaveMain.cpp
 %_iocboot_makefiles iocBoot; cd iocBoot; make %{?_smp_mflags}
 

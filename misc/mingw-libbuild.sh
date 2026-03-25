@@ -1,24 +1,29 @@
 #!/bin/sh -xe
 
-mingw="$(cd $(dirname $(which gcc))/..; pwd)"
-if grep -q 'command too long' "$mingw"/bin/bash.exe; then
-	w64devkit=true
-else
-	w64devkit=false
+w64devkit="$(cd $(dirname $(which gcc))/..; pwd)"
+if [ "$platform" = msvc ]; then
+	echo 'MSVC unsupported by this script'
+	exit 1
+elif ! [ -f "$w64devkit"/bin/bash.exe ]; then
+	echo 'On Linux, use your package manager instead of this script'
+	exit 1
 fi
-if ! "$w64devkit"; then
-	archdir=
-elif [ "$(uname -m)" = x86_64 ]; then
-	archdir="$mingw"/x86_64-w64-mingw32
-else
-	archdir="$mingw"/i686-w64-mingw32
+if ! grep -q 'command too long' "$w64devkit"/bin/bash.exe; then
+	echo 'MinGW build only supported with w64devkit'
+	exit 1
 fi
-confargs="--prefix=$mingw --bindir=$mingw/bin"
-if [ -n "$archdir" ]; then
-	confargs="$confargs --libdir=$archdir/lib --includedir=$archdir/include"; fi
+if [ "$(uname -m)" = x86_64 ]; then
+	archdir="$w64devkit"/x86_64-w64-mingw32
+else
+	archdir="$w64devkit"/i686-w64-mingw32
+fi
+if [ -n "$w64devkit" ]; then
+	confargs="--prefix=$w64devkit --bindir=$w64devkit/bin"
+	confargs="$confargs --libdir=$archdir/lib --includedir=$archdir/include"
+fi
 
 for lib in "$@"; do cd "$lib"
-	if "$w64devkit"; then
+	if [ -n "$w64devkit" ]; then
 		# <https://github.com/skeeto/w64devkit/issues/50>
 		sed -i \
 			's/func_convert_file_msys_to_w32/func_convert_file_noop/' configure

@@ -21,6 +21,7 @@ mv iocs/ipExample/iocBoot .; rm -rf iocs
 mv iocBoot/iocIpExample iocBoot/iock2kdmm
 chmod 0755 iocBoot/ioc*/st.cmd
 for d in iocBoot/ioc*/; do [ -f "$d"/Makefile ] ||
-	cp %{epics_root}/utils/ioc.mk "$d"/Makefile; done
+	cp %{epics_root}/utils/exampleIOC/iocBoot/iocExample/Makefile \
+		"$d"/Makefile; done
 cd iocBoot; make %{?_smp_mflags}
 

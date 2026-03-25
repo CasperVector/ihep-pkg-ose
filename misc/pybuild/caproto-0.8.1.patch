@@ -87,6 +87,26 @@ index ab91f158..515f4465 100644
  
      byteswap = (auto_byteswap and direction == ConversionDirection.TO_WIRE)
      return backend.python_to_epics(to_dtype, values, byteswap=byteswap,
+diff --git a/caproto/_commands.py b/caproto/_commands.py
+index 9c1f70ea..fe1ac6eb 100644
+--- a/caproto/_commands.py
++++ b/caproto/_commands.py
+@@ -1009,11 +1009,13 @@ class EventAddResponse(Message):
+ 
+     @property
+     def data(self):
+-        return extract_data(self.buffers[1], self.data_type, self.data_count)
++        return extract_data(self.buffers[1] if self.buffers else b'',
++                            self.data_type, self.data_count)
+ 
+     @property
+     def metadata(self):
+-        return extract_metadata(self.buffers[0], self.data_type)
++        return extract_metadata(self.buffers[0] if self.buffers else b'',
++                                self.data_type)
+ 
+     @property
+     def status(self):
 diff --git a/caproto/_numpy_backend.py b/caproto/_numpy_backend.py
 index f4c33cbb..090991b9 100644
 --- a/caproto/_numpy_backend.py

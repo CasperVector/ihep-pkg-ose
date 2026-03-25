@@ -1,0 +1,29 @@
+diff -ur asyn-R4-44-2/asyn/drvAsynUSBTMC/drvAsynUSBTMC.c asyn-R4-44-2/asyn/drvAsynUSBTMC/drvAsynUSBTMC.c
+--- asyn-R4-44-2/asyn/drvAsynUSBTMC/drvAsynUSBTMC.c	2021-05-10 23:56:28.000000000 +0800
++++ asyn-R4-44-2/asyn/drvAsynUSBTMC/drvAsynUSBTMC.c	2026-02-04 23:22:08.844614220 +0800
+@@ -578,6 +578,7 @@
+                 cbuf,                    // data
+                 0x0002,                  // wLength
+                 100);                    // timeout (ms)
++        if (s == LIBUSB_ERROR_TIMEOUT) goto retry;
+         status = checkControlTransfer("CHECK_CLEAR_STATUS", pdpvt, pasynUser,
+                                       s, 2, 1);
+         if (status != asynSuccess)
+@@ -591,6 +592,7 @@
+                         "CHECK_CLEAR_STATUS failed -- status: %x", cbuf[0]);
+             return asynError;
+         }
++retry:
+         switch (++pass) {
+         case 5:
+             asynPrint(pasynUser, ASYN_TRACE_ERROR, "Note -- RESET DEVICE.\n");
+diff -Nur asyn-R4-44-2/iocsh/serial.cmd asyn-R4-44-2/iocsh/serial.cmd
+--- asyn-R4-44-2/iocsh/serial.cmd       1970-01-01 08:00:00.000000000 +0800
++++ asyn-R4-44-2/iocsh/serial.cmd       2021-07-08 01:39:44.702146813 +0800
+@@ -0,0 +1,6 @@
++drvAsynSerialPortConfigure("${PORT}", "${DEVICE}")
++asynSetOption("${PORT}", 0, "baud", "${BAUD=9600}")
++asynSetOption("${PORT}", 0, "bits", "${BITS=8}")
++asynSetOption("${PORT}", 0, "stop", "${STOP=1}")
++asynSetOption("${PORT}", 0, "parity", "${PARITY=none}")
++

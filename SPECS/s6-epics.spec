@@ -1,5 +1,5 @@
 Name:           s6-epics
-Version:        0.0.4
+Version:        0.0.5
 Release:        1.el%{rhel}
 Summary:        Managing EPICS IOCs with s6
 
@@ -9,7 +9,7 @@ Source0:        %{codeberg_archive CasperVector %{name} v%{version}}
 
 AutoReqProv:    0
 BuildRequires:  gcc, make, s6
-Requires:       s6, socat
+Requires:       s6, socat, gzip
 
 %description
 

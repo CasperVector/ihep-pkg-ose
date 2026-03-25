@@ -1,0 +1,19 @@
+diff -ur iocStats-3.2.0/testIocStatsApp/src/Makefile iocStats-3.2.0/testIocStatsApp/src/Makefile
+--- iocStats-3.2.0/testIocStatsApp/src/Makefile	2023-09-15 19:55:27.000000000 +0800
++++ iocStats-3.2.0/testIocStatsApp/src/Makefile	2025-11-11 00:35:22.134343195 +0800
+@@ -14,6 +14,7 @@
+ 
+ #=============================
+ 
++ifneq (mingw, $(findstring mingw, $(T_A)))
+ ifdef SNCSEQ
+ 	PROD_IOC += testIocStats
+ 
+@@ -27,6 +28,7 @@
+ 	testIocStats_LIBS += pv
+ 	testIocStats_LIBS += $(EPICS_BASE_IOC_LIBS)
+ endif
++endif
+ 
+ include $(TOP)/configure/RULES
+ #----------------------------------------
