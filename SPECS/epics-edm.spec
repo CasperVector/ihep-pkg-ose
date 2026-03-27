@@ -11,7 +11,7 @@ Summary:        EPICS - Extensible Display Manager
 URL:            https://controlssoftware.sns.ornl.gov/edm/
 Source0:        https://epics.anl.gov/download/extensions/extensionsTop_20120904.tar.gz
 Source1:        %{github_archive_ver gnartohl %{repo} %{commit} V}
-Source2:        fonts.list
+Source2:        %{name}-fonts.list
 
 BuildRequires:  epics-base, gcc-c++, make, libX11-devel, libXtst-devel
 BuildRequires:  zlib-devel, giflib-devel, libpng-devel, motif-devel
@@ -27,7 +27,7 @@ Requires:       xorg-x11-fonts-ISO8859-1-100dpi, xorg-x11-fonts-ISO8859-1-75dpi
 %autosetup -n extensions
 tar xpf %{S:1}
 mv edm-%{commit} src/edm
-cp %{S:2} src/edm/setup
+cp %{S:2} src/edm/setup/fonts.list
 sed -i '/DIRS :=/ s/=.*/= edm/' src/Makefile
 
 %build

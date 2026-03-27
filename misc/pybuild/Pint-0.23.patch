@@ -1,0 +1,12 @@
+diff -ur Pint-0.23/pint/facets/numpy/numpy_func.py Pint-0.23/pint/facets/numpy/numpy_func.py
+--- Pint-0.23/pint/facets/numpy/numpy_func.py	2023-12-09 04:37:51.000000000 +0800
++++ Pint-0.23/pint/facets/numpy/numpy_func.py	2025-11-27 02:23:14.804880913 +0800
+@@ -952,7 +952,7 @@
+ # output array)
+ def implement_single_dimensionless_argument_func(func_str):
+     # If NumPy is not available, do not attempt implement that which does not exist
+-    if np is None:
++    if not hasattr(np, func_str):
+         return
+ 
+     func = getattr(np, func_str)

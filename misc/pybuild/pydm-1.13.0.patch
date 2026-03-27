@@ -56,20 +56,21 @@ diff -ur pydm-1.13.0/pydm/widgets/base.py pydm-1.13.0/pydm/widgets/base.py
 diff -ur pydm-1.13.0/pydm/widgets/line_edit.py pydm-1.13.0/pydm/widgets/line_edit.py
 --- pydm-1.13.0/pydm/widgets/line_edit.py	2022-02-09 11:12:15.000000000 +0800
 +++ pydm-1.13.0/pydm/widgets/line_edit.py	2023-11-02 16:34:49.402718455 +0800
-@@ -3,10 +3,10 @@
+@@ -3,10 +3,11 @@
  import ast
  import logging
  from functools import partial
 -from qtpy.QtWidgets import QLineEdit, QMenu, QApplication
 +from qtpy.QtWidgets import QLineEdit, QTextEdit, QMenu, QApplication
  from qtpy.QtCore import Property, Q_ENUMS
++from qtpy.QtGui import QTextCursor
  from .. import utilities
 -from .base import PyDMWritableWidget, TextFormatter, str_types
 +from .base import PyDMWidget, PyDMWritableWidget, TextFormatter, str_types
  from .display_format import DisplayFormat, parse_value_for_display
  
  logger = logging.getLogger(__name__)
-@@ -287,3 +287,19 @@
+@@ -287,3 +288,31 @@
          else:
              raise ValueError("invalid boolean input")
  
@@ -78,8 +79,19 @@ diff -ur pydm-1.13.0/pydm/widgets/line_edit.py pydm-1.13.0/pydm/widgets/line_edi
 +        QLineEdit.__init__(self, parent)
 +        PyDMWidget.__init__(self, init_channel=init_channel)
 +        self._string_encoding = "utf_8"
++        self._cursor_at_end = False
 +        self.setReadOnly(True)
++        if utilities.is_pydm_app():
++            self._string_encoding = self.app.get_string_encoding()
 +
++    @Property(bool)
++    def cursorAtEnd(self):
++        return self._cursor_at_end
++
++    @cursorAtEnd.setter
++    def cursorAtEnd(self, checked):
++        self._cursor_at_end = checked
++ 
 +    def value_changed(self, new_val):
 +        super(PyDMTextEdit, self).value_changed(new_val)
 +        self.setText(parse_value_for_display(
@@ -89,6 +101,20 @@ diff -ur pydm-1.13.0/pydm/widgets/line_edit.py pydm-1.13.0/pydm/widgets/line_edi
 +            string_encoding=self._string_encoding,
 +            widget=self,
 +        ))
++        self.moveCursor(QTextCursor.End if self._cursor_at_end else QTextCursor.Start)
+diff -ur pydm-1.13.0/pydm/widgets/multi_axis_plot.py pydm-1.13.0/pydm/widgets/multi_axis_plot.py
+--- pydm-1.13.0/pydm/widgets/multi_axis_plot.py 2023-08-31 01:10:43.000000000 +0800
++++ pydm-1.13.0/pydm/widgets/multi_axis_plot.py 2025-11-16 23:49:15.810675154 +0800
+@@ -118,7 +118,8 @@
+         Callback for resizing stacked views when the geometry of their top level view changes
+         """
+         for view in self.stackedViews:
+-            view.setGeometry(self.vb.sceneBoundingRect())
++            if view != self.vb:
++                view.setGeometry(self.vb.sceneBoundingRect())
+ 
+     def linkDataToAxis(self, plotDataItem: PlotDataItem, axisName: str) -> None:
+         """
 diff -ur pydm-1.13.0/pydm/widgets/pushbutton.py pydm-1.13.0/pydm/widgets/pushbutton.py
 --- pydm-1.13.0/pydm/widgets/pushbutton.py	2022-02-09 11:12:15.000000000 +0800
 +++ pydm-1.13.0/pydm/widgets/pushbutton.py	2023-11-02 16:23:02.767402324 +0800

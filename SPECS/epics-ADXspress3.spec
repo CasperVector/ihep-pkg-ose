@@ -2,7 +2,7 @@
 %define commit 20250201
 %define cmd_flags CMD_CFLAGS='%{optflags} -Wno-error=format-security' \\\
 	CMD_CXXFLAGS='%{optflags} -Wno-error=format-security'
-%{meta name license=LGPLv3+ version=3.2.8,1.commit}
+%{meta name license=LGPLv3+ version=3.2.8,2.commit}
 
 Summary:        EPICS - Xspress3 readout devices from Quantum Detectors
 URL:            https://codeberg.org/CasperVector/%{repo}

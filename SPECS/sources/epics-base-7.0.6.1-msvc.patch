@@ -1,0 +1,21 @@
+diff -ur base-7.0.6.1/modules/libcom/src/osi/os/WIN32/epicsMath.h base-7.0.6.1/modules/libcom/src/osi/os/WIN32/epicsMath.h
+--- base-7.0.6.1/modules/libcom/src/osi/os/WIN32/epicsMath.h	2021-10-07 09:11:17.000000000 +0800
++++ base-7.0.6.1/modules/libcom/src/osi/os/WIN32/epicsMath.h	2026-01-06 13:26:05.650071209 +0800
+@@ -15,6 +15,8 @@
+ #include <float.h>
+ #include <libComAPI.h>
+ 
++#if !defined(__cplusplus) || (defined(_MSC_VER) && (_MSC_VER < 1930))
++
+ #ifndef finite
+ #define finite(D) _finite(D)
+ #endif
+@@ -27,6 +29,8 @@
+ #define isinf(D) ( !_finite(D) && !_isnan(D) )
+ #endif
+ 
++#endif
++
+ #ifdef __cplusplus
+ extern "C" {
+ #endif

@@ -1,9 +1,9 @@
-%define skaver 2.13.1.1
-%define execver 2.9.3.0
+%define skaver 2.14.4.0
+%define execver 2.9.7.0
 
 Name:           s6
-Version:        2.11.3.2
-Release:        2.el%{rhel}
+Version:        2.13.2.0
+Release:        1.el%{rhel}
 Summary:        skarnet's small and secure supervision software suite
 
 License:        ISC
@@ -28,7 +28,7 @@ patch -p1 < %{P:0}
 %build
 stat -c '%a' %{_bindir} > bin.mod; stat -c '%a' %{_libdir} > libdir.mod
 sudo chmod 0755 %{_bindir} %{_libdir}
-%_chown_me %{_bindir} %{_libexecdir} %{_libdir} %{_includedir}
+%_chown_me %{_bindir} %{_libdir} %{_includedir}
 confargs='--bindir=%{_bindir} --libexecdir=%{_libexecdir} --disable-shared'
 confargs="$confargs --with-sysdep-devurandom=yes --with-sysdep-posixspawn=no"
 for pkg in skalibs execline s6; do cd "$pkg"
@@ -39,7 +39,7 @@ cd -; done
 
 %install
 . %{_specdir}/fn-build.sh; mkdir rm
-_mv_me "$PWD"/rm %{_bindir} %{_libexecdir} %{_libdir} %{_includedir}
+_mv_me "$PWD"/rm %{_bindir} %{_libdir} %{_includedir}
 sudo chmod "$(cat bin.mod)" %{_bindir}
 sudo chmod "$(cat libdir.mod)" %{_libdir}
 for pkg in skalibs execline s6; do
@@ -50,15 +50,14 @@ mkdir -p %{buildroot}%{_prefix}/lib/systemd/system \
 	%{buildroot}/var/service/.s6-svscan
 install -m 0644 *.service %{buildroot}%{_prefix}/lib/systemd/system
 install -m 0755 crash SIGTERM %{buildroot}/var/service/.s6-svscan
-%_file_list %{_bindir} %{_libexecdir} > files.lst
+%_file_list %{_bindir} > files.lst
 
 %files -f files.lst
 %{_includedir}/skalibs
 %{_includedir}/execline
 %{_includedir}/s6
 %{_libdir}/skalibs
-%{_libdir}/execline
-%{_libdir}/s6
+%{_libdir}/*.a
 %{_prefix}/lib/systemd/system/*.service
 /var/service/.s6-svscan/*
 

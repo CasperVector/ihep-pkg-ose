@@ -1,9 +1,11 @@
 diff -ur StreamDevice-2.8.16/configure/RELEASE StreamDevice-2.8.16/configure/RELEASE
 --- StreamDevice-2.8.16/configure/RELEASE	2020-08-18 20:46:16.000000000 +0800
 +++ StreamDevice-2.8.16/configure/RELEASE	2022-02-14 17:50:50.839964265 +0800
-@@ -19,7 +19,11 @@
+@@ -18,7 +18,12 @@
+ -include $(TOP)/../configure/SUPPORT.$(EPICS_HOST_ARCH)
  
  ASYN=$(SUPPORT)/asyn
++BUSY=$(SUPPORT)/busy
  CALC=$(SUPPORT)/calc
 -PCRE=$(SUPPORT)/pcre-7-2
 +#PCRE=$(SUPPORT)/pcre
@@ -14,13 +16,26 @@ diff -ur StreamDevice-2.8.16/configure/RELEASE StreamDevice-2.8.16/configure/REL
  
  # EPICS_BASE usually appears last so other apps can override stuff:
  EPICS_BASE=/opt/epics/base
+diff -ur StreamDevice-2.8.16/streamApp/asynRegistrars.dbd StreamDevice-2.8.16/streamApp/asynRegistrars.dbd
+--- StreamDevice-2.8.16/streamApp/asynRegistrars.dbd	2020-08-18 20:46:16.000000000 +0800
++++ StreamDevice-2.8.16/streamApp/asynRegistrars.dbd	2026-02-03 21:30:06.128201290 +0800
+@@ -6,4 +6,5 @@
+ registrar(drvAsynSerialPortRegisterCommands)
+ registrar(drvAsynIPPortRegisterCommands)
+ registrar(drvAsynIPServerPortRegisterCommands)
++registrar(usbtmcRegisterCommands)
+ registrar(vxi11RegisterCommands)
 diff -ur StreamDevice-2.8.16/streamApp/Makefile StreamDevice-2.8.16/streamApp/Makefile
 --- StreamDevice-2.8.16/streamApp/Makefile	2019-08-17 05:56:16.000000000 +0800
 +++ StreamDevice-2.8.16/streamApp/Makefile	2021-07-22 01:57:55.899592527 +0800
-@@ -50,6 +50,14 @@
+@@ -50,6 +50,18 @@
  # cygwin needs separate RPC library for asyn
  PROD_SYS_LIBS_cygwin32 += $(CYGWIN_RPC_LIB)
  endif
++ifdef BUSY
++streamApp_DBD += busySupport.dbd
++PROD_LIBS += busy
++endif
 +ifdef AUTOSAVE
 +streamApp_DBD += asSupport.dbd
 +PROD_LIBS += autosave

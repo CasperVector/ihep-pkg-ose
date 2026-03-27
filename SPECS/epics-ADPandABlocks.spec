@@ -1,6 +1,6 @@
 %define repo ADPandABlocks
 %define commit 20250804
-%{meta name license=EPICS version=commit,1}
+%{meta name license=EPICS version=commit,2}
 
 Summary:        EPICS - Driver for streaming data from PandABlocks-server
 URL:            https://github.com/PandABlocks/%{repo}

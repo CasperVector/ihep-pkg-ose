@@ -1,0 +1,27 @@
+diff -ur ADCore-R3-14/ADApp/pluginSrc/Makefile ADCore-R3-14/ADApp/pluginSrc/Makefile
+--- ADCore-R3-14/ADApp/pluginSrc/Makefile	2024-12-02 04:53:53.000000000 +0800
++++ ADCore-R3-14/ADApp/pluginSrc/Makefile	2026-01-06 13:29:49.277086835 +0800
+@@ -14,7 +14,9 @@
+ NDPluginBadPixel_CXXFLAGS_Linux += -std=c++11
+ NDPluginBadPixel_CXXFLAGS_Darwin += -std=c++11
+ 
+-ifneq ($(SHARED_LIBRARIES), YES)
++ifeq ($(SHARED_LIBRARIES), YES)
++   HDF5_STATIC_BUILD = NO
++else
+    USR_CFLAGS_WIN32 += -DLIBXML_STATIC
+    USR_CXXFLAGS_WIN32 += -DLIBXML_STATIC
+ endif
+diff -ur ADCore-R3-14/iocBoot/commonPlugins.cmd ADCore-R3-14/iocBoot/commonPlugins.cmd
+--- ADCore-R3-14/iocBoot/commonPlugins.cmd	2019-08-17 05:55:20.000000000 +0800
++++ ADCore-R3-14/iocBoot/commonPlugins.cmd	2020-09-27 00:08:07.717426971 +0800
+@@ -208,7 +208,8 @@
+ 
+ # Optional: load sseq record for acquisition sequence
+ #dbLoadRecords("$(CALC)/db/sseqRecord.db", "P=$(PREFIX), S=AcquireSequence")
+-#set_requestfile_path("$(CALC)/db")
++# Required by NDStats_settings.req
++set_requestfile_path("$(CALC)/db")
+ 
+ # Optional: load devIocStats records (requires DEVIOCSTATS module)
+ #dbLoadRecords("$(DEVIOCSTATS)/db/iocAdminSoft.db", "IOC=$(PREFIX)")

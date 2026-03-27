@@ -13,6 +13,15 @@ diff -Nur phoebus/phoebus.desktop phoebus/phoebus.desktop
 diff -Nur phoebus/phoebus/settings_template.ini phoebus/phoebus/settings_template.ini
 --- phoebus/phoebus/settings_template.ini	2022-11-04 16:07:36.000000000 +0800
 +++ phoebus/phoebus/settings_template.ini	2022-11-07 11:30:05.363029891 +0800
+@@ -495,7 +495,7 @@
+ # EDM colors.list file
+ # Must be defined to use converter.
+ # May be a file system path or http:/.. link
+-# org.csstudio.display.converter.edm/colors_list=
++org.csstudio.display.converter.edm/colors_list=/opt/epics/base/edm/colors.list
+ 
+ # Font mappings
+ #
 @@ -1067,9 +1067,9 @@
  ###########################
  

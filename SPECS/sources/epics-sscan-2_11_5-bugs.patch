@@ -1,0 +1,13 @@
+diff -ur sscan-R2-11-5/sscanApp/src/saveData_writeXDR.c sscan-R2-11-5/sscanApp/src/saveData_writeXDR.c
+--- sscan-R2-11-5/sscanApp/src/saveData_writeXDR.c	2021-10-20 05:43:57.000000000 +0800
++++ sscan-R2-11-5/sscanApp/src/saveData_writeXDR.c	2026-01-06 13:27:18.677805657 +0800
+@@ -167,9 +167,6 @@
+ 	#include <direct.h>
+ 	#include <io.h>
+ 	typedef unsigned int    u_int;
+-#endif
+-
+-#if defined(__MINGW32__) || defined(__MINGW64__)
+ 	#define mkdir(PATH, PERMIS) (mkdir(PATH))
+ #endif
+     
