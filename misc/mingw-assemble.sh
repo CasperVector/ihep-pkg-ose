@@ -47,6 +47,8 @@ for name in base $pkgs areaDetector; do
 	expand_rename "$name"; [ "$name" = base ] || norm_release "$name"; done
 rm asyn/configure/CONFIG_SITE.*
 sed -i 's/(IOCNAME):/(IOCNAME)/g' iocStats/iocAdmin/Db/*
+sed -i -e 's@^#EPICS_BASE=.*@EPICS_BASE=/opt/epics/base@' \
+	-e 's@^#SUPPORT=.*@SUPPORT=/opt/epics@' asyn/configure/RELEASE
 sed -i '/^IPAC=/ s/^/#!/' motor/configure/RELEASE
 sed -i '/BUILD_IOCS/ s/=.*/= YES/' motor/configure/CONFIG_SITE
 sed -i '/^INSTALL_LOCATION =/ s/^/#/' \

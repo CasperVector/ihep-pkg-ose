@@ -1,12 +1,12 @@
 %define repo dxpSITORO
-%define commit R1-2
+%define commit R1-3
 %{meta name license=EPICS github=epics-modules version=commit,8}
 
 Summary:        EPICS - XIA SITORO based FalconX spectrometers
 Patch0:         %{name}-1_2-dynamic.patch
 Patch1:         %{name}-1_2-files.patch
-Patch2:         %{name}-1_2-multibox.patch
-Patch3:         %{name}-1_2-mcahdf5.patch
+Patch2:         %{name}-1_3-multibox.patch
+Patch3:         %{name}-1_3-mcahdf5.patch
 BuildRequires:  epics-ADCore, epics-mca, gcc-c++, make, libXext-devel
 Requires:       epics-ADCore, epics-mca, libXext
 

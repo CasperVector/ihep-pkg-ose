@@ -14,8 +14,7 @@ diff -Nur epics-Keithley_648x.orig/configure/RELEASE epics-Keithley_648x/configu
 diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/controller.cmd epics-Keithley_648x/iocBoot/iock648x/controller.cmd
 --- epics-Keithley_648x.orig/iocBoot/iock648x/controller.cmd	1970-01-01 08:00:00.000000000 +0800
 +++ epics-Keithley_648x/iocBoot/iock648x/controller.cmd	2021-07-08 16:34:34.611546000 +0800
-@@ -0,0 +1,6 @@
-+iocshLoad("$(ASYN)/iocsh/serial.cmd","PORT=${APORT}")
+@@ -0,0 +1,5 @@
 +asynOctetSetInputEos("${APORT}",0,"\r")
 +asynOctetSetOutputEos("${APORT}",0,"\r")
 +asynOctetConnect("${APORT}","${APORT}")
@@ -24,7 +23,7 @@ diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/controller.cmd epics-Keithle
 diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd epics-Keithley_648x/iocBoot/iock648x/st.cmd
 --- epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd	2019-03-07 00:09:38.000000000 +0800
 +++ epics-Keithley_648x/iocBoot/iock648x/st.cmd	2021-07-08 17:15:17.229388366 +0800
-@@ -1,51 +1,21 @@
+@@ -1,71 +1,23 @@
  #!../../bin/linux-x86_64/k648x
  
  < envPaths
@@ -38,9 +37,16 @@ diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd epics-Keithley_648x/i
  
 -
  cd ${TOP}/iocBoot/${IOC}
++iocshLoad("$(ASYN)/iocsh/serial.cmd","PORT=serial1,DEVICE=/dev/ttyS1")
++#drvAsynIPPortConfigure("serial1","10.0.0.20:4001")
++iocshLoad("controller.cmd","K648X=6485,PORT=CA1,APORT=serial1")
++dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6485.db","P=k648x:,CA=CA1:,PORT=CA1")
++#iocshLoad("controller.cmd","K648X=6487,PORT=CA1,APORT=serial1")
++#dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6487.db","P=k648x:,CA=CA1:,PORT=CA1")
+ 
 -
+-############ Linux serial port ###############
 -
--# serial 1
 -#drvAsynSerialPortConfigure("portName","ttyName",priority,noAutoConnect,
 -#                            noProcessEos)
 -drvAsynSerialPortConfigure("serial1", "/dev/ttyS1", 0, 0, 0)
@@ -59,21 +65,36 @@ diff -Nur epics-Keithley_648x.orig/iocBoot/iock648x/st.cmd epics-Keithley_648x/i
 -#                 int timeout, int buffer_len, const char *drvInfo)
 -asynOctetConnect("serial1", "serial1")
 -
--
--
+-##### for 6485
 -#drvAsynKeithley648x("6487", "CA1","serial1",-1);
 -#dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6487.db","P=k648x:,CA=CA1:,PORT=CA1"
 -
+-##### for 6487
 -drvAsynKeithley648x("6485", "CA1","serial1",-1);
 -dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6485.db","P=k648x:,CA=CA1:,PORT=CA1"
 -
--
-+#iocshLoad("controller.cmd","K648X=6487,PORT=CA1,APORT=serial1,DEVICE=/dev/ttyS1")
-+#dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6487.db","P=k648x:,CA=CA1:,PORT=CA1")
-+iocshLoad("controller.cmd","K648X=6485,PORT=CA1,APORT=serial1,DEVICE=/dev/ttyS1")
-+dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6485.db","P=k648x:,CA=CA1:,PORT=CA1")
- 
+-##### asyn record for debugging
  dbLoadRecords("$(ASYN)/db/asynRecord.db", "P=k648x:,R=asyn_k648x,PORT=serial1,ADDR=0,OMAX=256,IMAX=2048")
+-
+-########### network interface ###################
+-
+-# drvAsynIPPortConfigure("ip_ca1","10.0.0.20:4001", 0, 0, 0)
+-# asynOctetSetInputEos("ip_ca1",0,"\r")
+-# asynOctetSetOutputEos("ip_ca1",0,"\r")
+-
+-##### for 6485
+-# drvAsynKeithley648x( "6485", "CA1","ip_ca1",-1);
+-# dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6485.db","P=29idb:,CA=ca1:,PORT=CA1")
+-
+-##### for 6487
+-# drvAsynKeithley648x( "6487", "CA1","ip_ca1",-1);
+-# dbLoadRecords("$(TOP)/k648xApp/Db/Keithley6487.db","P=29idb:,CA=ca1:,PORT=CA1")
+-
+-##### asyn record for debugging
+-dbLoadRecords("$(ASYN)/db/asynRecord.db", "P=k648x:,R=asyn_k648x,PORT=ip_ca1,ADDR=0,OMAX=256,IMAX=2048")
+-
+-#####################################
+-
 -
  ## Run this to trace the stages of iocInit
  #traceIocInit

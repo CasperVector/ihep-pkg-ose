@@ -1,6 +1,6 @@
 %define repo ADPICam
-%define commit 0d86faec
-%{meta name license=EPICS github=areaDetector version=commit,4}
+%define commit baecb4c7
+%{meta name license=EPICS github=areaDetector version=20251021,1.commit}
 %if %{rhel} == 7
 %define cmd_flags GNU_DIR=/opt/rh/devtoolset-8/root/usr \\\
 	CMD_CFLAGS='%{optflags}' CMD_CXXFLAGS='%{optflags}'

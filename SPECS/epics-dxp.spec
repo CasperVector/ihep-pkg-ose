@@ -1,5 +1,5 @@
 %define repo dxp
-%define commit R6-0
+%define commit R6-1
 %{meta name license=EPICS github=epics-modules version=commit,5}
 
 Summary:        EPICS - DSP-based multi-channel analysers from XIA

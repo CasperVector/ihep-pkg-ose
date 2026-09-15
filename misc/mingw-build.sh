@@ -75,8 +75,8 @@ if [ "$PATH_SEPARATOR" != ':' ]; then
 	sed -i "/^sub relPaths/,/^}/ s/':'/'$PATH_SEPARATOR'/g" \
 		base/src/tools/convertRelease.pl
 fi
-sed "s,@epics_root@,$support,g; s,@etop_base@,$EPICS_BASE,g" \
-	< utils/support.release > configure/RELEASE
+sed -i "s,/opt/epics/base,$EPICS_BASE,g; s,/opt/epics,$support,g" \
+	configure/RELEASE
 if [ "$platform" != linux ]; then
 	if ! which re2c; then platform= ./mingw-libbuild.sh re2c; fi
 	if [ -d pcre ] && ! which pcregrep; then

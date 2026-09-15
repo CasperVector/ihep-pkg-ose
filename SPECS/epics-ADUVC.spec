@@ -1,9 +1,9 @@
 %define repo ADUVC
-%define commit 0aa7bbfe
-%{meta name license=XFree86 github=areaDetector version=commit,6}
+%define commit R2-0
+%{meta name license=XFree86 github=areaDetector version=commit,1}
 
 Summary:        EPICS - USB Video Class (UVC) devices
-Patch0:         %{name}-0aa7bbfe-config.patch
+Patch0:         %{name}-2_0-config.patch
 BuildRequires:  libusbx-devel
 Requires:       libusbx
 
@@ -14,9 +14,9 @@ Requires:       libusbx
 mv %{repo}/99-uvc.rules .
 
 %{inherit ad + build}
-cd %{etop_ad}/%{repo}/*Support/cameraDetector
+cd %{etop_ad}/%{repo}/*Support/utils
 mkdir -p %{etop_ad}/%{repo}/bin/%{epics_arch}
-make %{?_smp_mflags}; mv uvc_locater %{etop_ad}/%{repo}/bin/%{epics_arch}
+make %{?_smp_mflags}; mv bin/* %{etop_ad}/%{repo}/bin/%{epics_arch}
 
 %{inherit ad + install}
 mkdir -p %{buildroot}/etc/udev/rules.d

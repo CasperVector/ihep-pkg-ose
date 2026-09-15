@@ -63,38 +63,38 @@ index e4982e81..cedbea01 100644
              res[k] = v[-1]
          return res
 diff --git a/ophyd/areadetector/plugins.py b/ophyd/areadetector/plugins.py
-index 6b50e2f0..af3204f5 100644
+index 6b50e2f0..b1564d1e 100644
 --- a/ophyd/areadetector/plugins.py
 +++ b/ophyd/areadetector/plugins.py
-@@ -196,13 +196,6 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
+@@ -196,10 +196,10 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
  
          return pixels
  
 -    def read_configuration(self):
 -        ret = super().read_configuration()
--
++    def read_configuration(self, dot=False, fast=False):
++        ret = super().read_configuration(dot, fast)
+ 
 -        ret.update(self.source_plugin.read_configuration())
--
--        return ret
--
-     @property
-     def source_plugin(self):
-         '''The PluginBase object that is the asyn source for this plugin.
-@@ -211,14 +204,6 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
++        ret.update(self.source_plugin.read_configuration(dot, fast))
+ 
+         return ret
+ 
+@@ -211,11 +211,11 @@ class PluginBase(ADBase, version=(1, 9, 1), version_type='ADCore'):
          source_plugin = self.ad_root.get_plugin_by_asyn_port(source_port)
          return source_plugin
  
 -    def describe_configuration(self):
 -        ret = super().describe_configuration()
--
--        source_plugin = self.source_plugin
++    def describe_configuration(self, dot=False):
++        ret = super().describe_configuration(dot)
+ 
+         source_plugin = self.source_plugin
 -        ret.update(source_plugin.describe_configuration())
--
--        return ret
--
-     @property
-     def _asyn_pipeline(self):
-         parent = self.ad_root.get_plugin_by_asyn_port(self.nd_array_port.get())
++        ret.update(source_plugin.describe_configuration(dot))
+ 
+         return ret
+ 
 diff --git a/ophyd/areadetector/trigger_mixins.py b/ophyd/areadetector/trigger_mixins.py
 index 830abe34..8e24584c 100644
 --- a/ophyd/areadetector/trigger_mixins.py
@@ -127,7 +127,7 @@ index 830abe34..8e24584c 100644
  
      def stage(self):
 diff --git a/ophyd/device.py b/ophyd/device.py
-index b2e3ec07..0bed48e2 100644
+index b2e3ec07..5f7edf1b 100644
 --- a/ophyd/device.py
 +++ b/ophyd/device.py
 @@ -23,7 +23,7 @@ from typing import Dict, List, Any, TypeVar, Tuple
@@ -655,7 +655,7 @@ index 7d47e38e..0da3c562 100644
              d['lower_ctrl_limit'] = low_limit
              d['units'] = self.egu
 diff --git a/ophyd/signal.py b/ophyd/signal.py
-index 632cee95..110cb82d 100644
+index 632cee95..c826aadd 100644
 --- a/ophyd/signal.py
 +++ b/ophyd/signal.py
 @@ -88,7 +88,7 @@ class Signal(OphydObject):
@@ -667,7 +667,46 @@ index 632cee95..110cb82d 100644
  
          super().__init__(name=name, parent=parent, kind=kind, labels=labels,
                           attr_name=attr_name)
-@@ -378,7 +378,7 @@ class Signal(OphydObject):
+@@ -285,21 +285,21 @@ class Signal(OphydObject):
+ 
+         def set_thread():
+             try:
++                exc = None
+                 self._set_and_wait(value, timeout)
+-            except TimeoutError:
+-                success = False
++            except TimeoutError as e:
++                exc = e
+                 self.log.warning(
+                     '%s: set_and_wait(value=%s, timeout=%s, atol=%s, rtol=%s)',
+                     self.name, value, timeout, self.tolerance, self.rtolerance
+                 )
+-            except Exception:
+-                success = False
++            except Exception as e:
++                exc = e
+                 self.log.exception(
+                     '%s: set_and_wait(value=%s, timeout=%s, atol=%s, rtol=%s)',
+                     self.name, value, timeout, self.tolerance, self.rtolerance
+                 )
+             else:
+-                success = True
+                 self.log.info(
+                     '%s: set_and_wait(value=%s, timeout=%s, atol=%s, rtol=%s) succeeded => %s',
+                     self.name, value, timeout, self.tolerance, self.rtolerance, self._readback)
+@@ -312,7 +312,10 @@ class Signal(OphydObject):
+                 th = self._set_thread
+                 # these two must be in this order to avoid a race condition
+                 self._set_thread = None
+-                st._finished(success=success)
++                if exc:
++                    st.set_exception(exc)
++                else:
++                    st.set_finished()
+                 del th
+ 
+         if self._set_thread is not None:
+@@ -378,7 +381,7 @@ class Signal(OphydObject):
          self.put(value)
  
      @raise_if_disconnected
@@ -676,7 +715,7 @@ index 632cee95..110cb82d 100644
          '''Put the status of the signal into a simple dictionary format
          for data acquisition
  
-@@ -387,10 +387,10 @@ class Signal(OphydObject):
+@@ -387,10 +390,10 @@ class Signal(OphydObject):
              dict
          '''
          value = self.get()
@@ -690,7 +729,7 @@ index 632cee95..110cb82d 100644
          """Provide schema and meta-data for :meth:`~BlueskyInterface.read`
  
          This keys in the `OrderedDict` this method returns must match the
-@@ -411,7 +411,7 @@ class Signal(OphydObject):
+@@ -411,7 +414,7 @@ class Signal(OphydObject):
              val = self._readback
          try:
              return {
@@ -699,7 +738,7 @@ index 632cee95..110cb82d 100644
                      'source': 'SIM:{}'.format(self.name),
                      'dtype': data_type(val),
                      'shape': data_shape(val)
-@@ -422,11 +422,11 @@ class Signal(OphydObject):
+@@ -422,11 +425,11 @@ class Signal(OphydObject):
              # help the humans by reporting self.name in the exception chain
              raise ValueError(f"failed to describe '{self.name}' with value '{val}'") from ve
  
@@ -714,7 +753,7 @@ index 632cee95..110cb82d 100644
          """Provide schema & meta-data for `~BlueskyInterface.read_configuration`
  
          This keys in the `OrderedDict` this method returns must match the keys
-@@ -441,7 +441,7 @@ class Signal(OphydObject):
+@@ -441,7 +444,7 @@ class Signal(OphydObject):
              The keys must be strings and the values must be dict-like
              with the ``event_model.event_descriptor.data_key`` schema.
          """
@@ -723,7 +762,7 @@ index 632cee95..110cb82d 100644
  
      @property
      def limits(self):
-@@ -580,14 +580,15 @@ class DerivedSignal(Signal):
+@@ -580,14 +583,15 @@ class DerivedSignal(Signal):
          '''Signal that this one is derived from'''
          return self._derived_from
  
@@ -744,7 +783,7 @@ index 632cee95..110cb82d 100644
  
      def _update_metadata_from_callback(self, **kwargs):
          updated_md = {key: kwargs[key] for key in self.metadata_keys
-@@ -1242,7 +1243,7 @@ class EpicsSignalBase(Signal):
+@@ -1242,7 +1246,7 @@ class EpicsSignalBase(Signal):
          super().put(value=value, timestamp=metadata.pop('timestamp'),
                      metadata=metadata, force=True)
  
@@ -753,7 +792,7 @@ index 632cee95..110cb82d 100644
          """Return the description as a dictionary
  
          Returns
-@@ -1270,7 +1271,7 @@ class EpicsSignalBase(Signal):
+@@ -1270,7 +1274,7 @@ class EpicsSignalBase(Signal):
          if self.enum_strs is not None:
              desc['enum_strs'] = tuple(self.enum_strs)
  
@@ -762,7 +801,7 @@ index 632cee95..110cb82d 100644
  
  
  class EpicsSignalRO(EpicsSignalBase):
-@@ -1903,13 +1904,14 @@ class AttributeSignal(Signal):
+@@ -1903,13 +1907,14 @@ class AttributeSignal(Signal):
          self._run_subs(sub_type=self.SUB_VALUE, old_value=old_value,
                         value=value, timestamp=time.time())
  
